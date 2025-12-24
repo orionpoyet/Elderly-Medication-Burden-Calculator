@@ -1,0 +1,6 @@
+drug_name,drug_class,is_sedative,is_anticholinergic
+metformin,antidiabetic,0,0
+lorazepam,benzodiazepine,1,0
+diphenhydramine,antihistamine,1,1
+sertraline,ssri,0,0
+zolpidem,sedative-hypnotic,1,0

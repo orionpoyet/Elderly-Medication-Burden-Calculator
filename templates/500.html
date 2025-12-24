@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error{% endblock %}
+
+{% block content %}
+<div class="container text-center py-5">
+    <div class="error-page">
+        <h1 class="display-1">500</h1>
+        <h2 class="mb-4">Internal Server Error</h2>
+        <p class="lead mb-4">
+            Something went wrong on our end. Please try again later.
+        </p>
+        <div class="alert alert-info mb-4">
+            <i class="fas fa-info-circle"></i>
+            If this error persists, please try clearing your browser cache 
+            or contact support if you're the application owner.
+        </div>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">
+            <i class="fas fa-home"></i> Go Home
+        </a>
+    </div>
+</div>
+
+<style>
+.error-page {
+    max-width: 600px;
+    margin: 0 auto;
+}
+.display-1 {
+    font-size: 6rem;
+    font-weight: bold;
+    color: #dc3545;
+}
+</style>
+{% endblock %}

@@ -22,33 +22,40 @@ from elderly_med_burden import (
 )
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'  # Change this!
-app.config['REPORTS_FOLDER'] = 'reports'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Ensure reports folder exists
-if not os.path.exists(app.config['REPORTS_FOLDER']):
-    os.makedirs(app.config['REPORTS_FOLDER'])
+REPORTS_DIR = 'reports'
+if not os.path.exists(REPORTS_DIR):
+    os.makedirs(REPORTS_DIR)
+
+# ==================== ROUTES ====================
 
 @app.route('/')
 def index():
     """Home page"""
     return render_template('index.html')
 
-@app.route('/analyze', methods=['GET', 'POST'])
-def analyze():
-    """Analyze medications"""
-    if request.method == 'GET':
-        return render_template('analyze.html')
-    else:
-        # Handle form submission
-        data = request.json
-        return process_analysis(data)
+@app.route('/analyze')
+def analyze_page():
+    """Analyze medications page"""
+    return render_template('analyze.html')
 
-def process_analysis(data):
-    """Process medication analysis"""
+@app.route('/about')
+def about():
+    """About page"""
+    return render_template('about.html')
+
+@app.route('/contact')
+def contact():
+    """Contact page"""
+    return render_template('contact.html')
+
+@app.route('/api/analyze', methods=['POST'])
+def analyze_api():
+    """API endpoint for analysis"""
     try:
-        # Extract data
+        data = request.json
         patient_info = {
             "age": int(data.get('age', 65)),
             "cognitive_impairment": data.get('cognitive_impairment', False),
@@ -57,7 +64,7 @@ def process_analysis(data):
         
         medications = data.get('medications', [])
         
-        # Convert medication format if needed
+        # Convert medication format
         meds = []
         for med in medications:
             meds.append({
@@ -68,7 +75,7 @@ def process_analysis(data):
                 "rxcui": None
             })
         
-        # Run your existing analysis
+        # Run analysis
         dir_triggers = filter_interactions_web(meds)
         mcls_score, mcls_burden, mcls_explanation = calculate_mcls(meds)
         
@@ -81,12 +88,11 @@ def process_analysis(data):
         # Store in session for PDF generation
         session['last_report'] = report_data
         session['last_meds'] = medications
-        session['last_patient'] = patient_info
+        session['last_dir_triggers'] = dir_triggers
         
         return jsonify({
             "success": True,
-            "report": report_data,
-            "patient": patient_info
+            "report": report_data
         })
         
     except Exception as e:
@@ -95,18 +101,12 @@ def process_analysis(data):
             "error": str(e)
         }), 400
 
-@app.route('/report/<report_id>')
-def view_report(report_id):
-    """View a specific report"""
-    # You can implement report storage/retrieval here
-    return render_template('report.html', report_id=report_id)
-
-@app.route('/export/pdf')
+@app.route('/api/export/pdf')
 def export_pdf():
     """Generate PDF report"""
     try:
+        # Check if we have a PDF generator
         from utils.pdf_generator import generate_pdf_report
-        
         report_data = session.get('last_report', {})
         if not report_data:
             return jsonify({"error": "No report data found"}), 400
@@ -116,8 +116,10 @@ def export_pdf():
         
     except ImportError:
         return jsonify({"error": "PDF generation not available"}), 501
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/export/csv')
+@app.route('/api/export/csv')
 def export_csv():
     """Generate CSV report"""
     try:
@@ -129,9 +131,20 @@ def export_csv():
         return send_file(csv_path, as_attachment=True)
         
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": str(e)}), 500
 
-# Your existing functions, adapted for web
+# ==================== ERROR HANDLERS ====================
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
+# ==================== HELPER FUNCTIONS ====================
+
 def filter_interactions_web(meds):
     """Check interactions - web version"""
     interactions = []
@@ -184,17 +197,31 @@ def export_detailed_report_web(report_data, meds, dir_triggers):
     """Export CSV - web version"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     report_filename = f"elderly_med_report_{timestamp}.csv"
-    report_path = os.path.join(app.config['REPORTS_FOLDER'], report_filename)
+    report_path = os.path.join(REPORTS_DIR, report_filename)
     
     # Your existing CSV generation code here
     import csv
     with open(report_path, mode="w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        # ... existing CSV code ...
+        writer.writerow(["ELDER MED MANAGER - COMPREHENSIVE REPORT"])
+        writer.writerow(["Generated:", datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+        writer.writerow([])
+        writer.writerow(["PATIENT INFORMATION"])
+        writer.writerow(["Age", report_data["patient_info"]["age"]])
+        writer.writerow(["Cognitive Impairment", "Yes" if report_data["patient_info"]["cognitive_impairment"] else "No"])
+        writer.writerow(["Caregiver Present", "Yes" if report_data["patient_info"]["caregiver_present"] else "No"])
     
     return report_path
 
+# ==================== TEMPLATE PAGES ====================
+
+@app.route('/templates/<template_name>')
+def serve_template(template_name):
+    """Serve template files directly (for debugging)"""
+    return render_template(template_name)
+
+# ==================== MAIN ====================
+
 if __name__ == '__main__':
-    import os
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

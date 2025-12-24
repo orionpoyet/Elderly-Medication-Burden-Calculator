@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Contact - Elder Med Manager{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1>Contact Us</h1>
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Feedback & Support</h5>
+                    <p class="card-text">
+                        We welcome feedback from healthcare professionals, 
+                        caregivers, and users. Please note that this is an 
+                        educational tool and we cannot provide medical advice.
+                    </p>
+                    
+                    <h6 class="mt-3">For Technical Support:</h6>
+                    <ul>
+                        <li>Report bugs or technical issues</li>
+                        <li>Suggest new features</li>
+                        <li>Request additional functionality</li>
+                    </ul>
+                    
+                    <h6 class="mt-3">For Medical Questions:</h6>
+                    <p>
+                        Please consult with:
+                        <ul>
+                            <li>Your primary care physician</li>
+                            <li>A clinical pharmacist</li>
+                            <li>A geriatric specialist</li>
+                        </ul>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Disclaimer</h5>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Medical Disclaimer:</strong><br>
+                        This tool is for educational purposes only. It does not 
+                        provide medical advice, diagnosis, or treatment. Always 
+                        seek the advice of qualified health providers with 
+                        questions regarding medical conditions.
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Emergency Situations:</strong><br>
+                        In case of emergency, call 911 or go to the nearest 
+                        emergency room.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Get Started</h5>
+                    <p>
+                        Ready to analyze a medication regimen?
+                    </p>
+                    <a href="{{ url_for('analyze_page') }}" class="btn btn-primary">
+                        <i class="fas fa-play-circle"></i> Start Analysis
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

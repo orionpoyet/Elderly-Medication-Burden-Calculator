@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}About - Elder Med Manager{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1>About Elder Med Manager</h1>
+    
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <h3>Our Mission</h3>
+            <p>
+                Elder Med Manager is designed to help healthcare professionals, caregivers, 
+                and elderly patients better manage complex medication regimens. Our tool 
+                identifies potential risks and provides actionable recommendations to 
+                improve medication safety and adherence.
+            </p>
+            
+            <h3 class="mt-4">Key Features</h3>
+            <ul>
+                <li>Medication burden calculation for patients 65+</li>
+                <li>Beers Criteria assessment (2023 AGS guidelines)</li>
+                <li>Drug interaction checking</li>
+                <li>Fall risk assessment</li>
+                <li>Anticholinergic burden scoring</li>
+                <li>Medication adherence prediction</li>
+                <li>Simplification recommendations</li>
+            </ul>
+            
+            <h3 class="mt-4">Disclaimer</h3>
+            <div class="alert alert-warning">
+                <strong>Important:</strong> This tool is for educational and assessment 
+                purposes only. It is NOT a substitute for professional medical advice. 
+                Always consult with healthcare professionals before making any changes 
+                to medication regimens.
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Technical Information</h5>
+                    <p class="card-text">
+                        <strong>Version:</strong> 1.0.0<br>
+                        <strong>Last Updated:</strong> December 2024<br>
+                        <strong>Framework:</strong> Flask (Python)<br>
+                        <strong>Database:</strong> Local interaction database<br>
+                        <strong>License:</strong> Educational Use
+                    </p>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Contact</h5>
+                    <p class="card-text">
+                        For questions or feedback, please visit our 
+                        <a href="{{ url_for('contact') }}">Contact page</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
