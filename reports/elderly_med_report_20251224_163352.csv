@@ -1,0 +1,45 @@
+ELDER MED MANAGER - COMPREHENSIVE REPORT
+Generated:,2025-12-24 16:33:52
+
+PATIENT INFORMATION
+Age,76
+Cognitive Impairment,Yes
+Caregiver Present,Yes
+
+CURRENT MEDICATIONS
+Medication,Doses Per Day
+warfarin,3
+bactrim,2
+
+BURDEN ASSESSMENT
+Metric,Value,Assessment
+Total Medications,2,
+Total Pills Per Day,5,LOW
+Predicted Adherence,60.0%,
+Fall Risk Score,1/10,LOW
+Anticholinergic Burden,1,
+MCLS Score,9,MODERATE
+DIRS Score,3,Low
+
+BEERS CRITERIA VIOLATIONS
+No Beers Criteria violations detected
+
+DAILY MEDICATION SCHEDULE
+Time,Medications
+Morning (8 AM),"warfarin, bactrim"
+Noon (12 PM),warfarin
+Evening (6 PM),"warfarin, bactrim"
+Bedtime (10 PM),(none)
+
+DRUG INTERACTIONS
+Drug 1,Drug 2,Severity,Description
+warfarin,bactrim,high,"Bactrim significantly increases warfarin's anticoagulant effect, increasing bleeding risk"
+
+SIMPLIFICATION RECOMMENDATIONS
+🔄 warfarin: Currently 3x daily. Ask doctor about extended-release formulation for once-daily dosing.
+
+KEY RISK FACTORS
+⚠️  Low predicted adherence (60.0%)
+
+DISCLAIMER
+This is an educational tool only. All medication changes must be made in consultation with healthcare professionals.

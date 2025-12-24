@@ -1,0 +1,124 @@
+
+================================================================================
+CHECKING DRUG INTERACTIONS
+================================================================================
+⚠️  INTERACTION: warfarin + bactrim
+
+📊 Checked 1 drug pair(s), found 1 interaction(s)
+
+================================================================================
+🏥 COMPREHENSIVE ELDERLY MEDICATION BURDEN ASSESSMENT
+================================================================================
+
+📋 PATIENT SUMMARY
+--------------------------------------------------------------------------------
+Age: 76 years
+Cognitive Impairment: Yes
+Caregiver Present: Yes
+
+💊 MEDICATION OVERVIEW
+--------------------------------------------------------------------------------
+Total Medications: 2
+Total Pills Per Day: 5
+Memory Actions Required Per Day: 3
+Pill Burden Level: LOW
+Assessment: Reasonable medication burden
+
+📊 PREDICTED MEDICATION ADHERENCE
+--------------------------------------------------------------------------------
+Estimated Adherence: 60.0%
+⚠️  Fair - Consider simplification strategies
+
+🚨 BEERS CRITERIA ASSESSMENT (Potentially Inappropriate Medications)
+--------------------------------------------------------------------------------
+✓ No Beers Criteria violations detected
+
+⚠️  FALL RISK ASSESSMENT
+--------------------------------------------------------------------------------
+Fall Risk Score: 1/10
+Fall Risk Category: LOW
+✓ No specific fall-risk medications identified
+
+🧠 ANTICHOLINERGIC BURDEN
+--------------------------------------------------------------------------------
+Total Anticholinergic Score: 1
+⚠️  LOW - Minimal concern, but monitor
+
+Contributing Medications:
+  • warfarin (score: 1)
+
+🧮 MEDICATION COGNITIVE LOAD SCORE (MCLS)
+--------------------------------------------------------------------------------
+Score: 9
+Burden Level: MODERATE
+Explanation: Cognitive burden due to 2 medications, total of 5 daily doses
+
+⚗️  DRUG INTERACTION RISK SCORE (DIRS)
+--------------------------------------------------------------------------------
+Score: 3
+Risk Level: Low
+
+⚠️  1 INTERACTION(S) DETECTED:
+
+1. WARFARIN + BACTRIM
+   Severity: HIGH
+   Details: Bactrim significantly increases warfarin's anticoagulant effect, increasing bleeding risk
+
+================================================================================
+📅 DAILY MEDICATION SCHEDULE
+================================================================================
+
+Morning (8 AM)
+----------------------------------------
+  💊 warfarin
+  💊 bactrim
+
+Noon (12 PM)
+----------------------------------------
+  💊 warfarin
+
+Evening (6 PM)
+----------------------------------------
+  💊 warfarin
+  💊 bactrim
+
+Bedtime (10 PM)
+----------------------------------------
+  (none)
+
+💡 TIP: Use a pill organizer to prepare medications weekly
+💡 TIP: Set phone alarms for each medication time
+
+💡 SIMPLIFICATION RECOMMENDATIONS
+================================================================================
+🔄 warfarin: Currently 3x daily. Ask doctor about extended-release formulation for once-daily dosing.
+
+🎯 OVERALL RISK SUMMARY
+================================================================================
+⚠️  KEY CONCERNS IDENTIFIED:
+   ⚠️  Low predicted adherence (60.0%)
+
+🏥 RECOMMENDATION: Comprehensive medication review with physician or clinical pharmacist STRONGLY advised
+
+📋 RECOMMENDED NEXT STEPS
+================================================================================
+1. Schedule medication review with physician or clinical pharmacist
+2. Discuss Beers Criteria violations and possible alternatives
+3. Implement fall prevention strategies if applicable
+4. Consider simplification opportunities to improve adherence
+5. Set up medication organizer and/or caregiver support if needed
+6. Monitor for side effects, especially confusion, dizziness, falls
+7. Review this assessment with all healthcare providers
+
+================================================================================
+📄 Detailed report exported to: reports\elderly_med_report_20251224_163352.csv
+================================================================================
+
+================================================================================
+⚠️  IMPORTANT REMINDERS
+================================================================================
+• Share this report with patient's healthcare team
+• Do NOT make medication changes without professional consultation
+• This tool is for educational and assessment purposes only
+• Regular medication reviews are essential for elderly patients
+================================================================================

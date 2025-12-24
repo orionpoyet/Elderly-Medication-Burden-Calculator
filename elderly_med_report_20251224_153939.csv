@@ -1,0 +1,51 @@
+ELDER MED MANAGER - COMPREHENSIVE REPORT
+Generated:,2025-12-24 15:39:39
+
+PATIENT INFORMATION
+Age,78
+Cognitive Impairment,Yes
+Caregiver Present,No
+
+CURRENT MEDICATIONS
+Medication,Doses Per Day
+warfarin,1
+diphenhydramine,2
+diazepam,2
+metoprolol,2
+furosemide,1
+
+BURDEN ASSESSMENT
+Metric,Value,Assessment
+Total Medications,5,
+Total Pills Per Day,8,MODERATE
+Predicted Adherence,51.0%,
+Fall Risk Score,7/10,HIGH
+Anticholinergic Burden,5,
+MCLS Score,18,HIGH
+DIRS Score,0,Low
+
+BEERS CRITERIA VIOLATIONS
+Medication,Category,Risk Level,Rationale,Recommendation
+diphenhydramine,Anticholinergic,high,"Highly anticholinergic; cognitive impairment, delirium, falls",Avoid. Consider non-sedating antihistamines
+diazepam,Benzodiazepine,high,"Increased fall risk, cognitive impairment, delirium. Long half-life","Avoid. If needed for anxiety, consider short-acting alternatives"
+
+DAILY MEDICATION SCHEDULE
+Time,Medications
+Morning (8 AM),"warfarin, diphenhydramine, diazepam, metoprolol, furosemide"
+Noon (12 PM),(none)
+Evening (6 PM),"diphenhydramine, diazepam, metoprolol"
+Bedtime (10 PM),(none)
+
+DRUG INTERACTIONS
+No interactions detected in database
+
+SIMPLIFICATION RECOMMENDATIONS
+
+KEY RISK FACTORS
+❌ 2 Beers Criteria violation(s)
+⚠️  HIGH fall risk
+❌ High anticholinergic burden (score: 5)
+⚠️  Low predicted adherence (51.0%)
+
+DISCLAIMER
+This is an educational tool only. All medication changes must be made in consultation with healthcare professionals.

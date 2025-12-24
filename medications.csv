@@ -1,0 +1,11 @@
+name,doses_per_day,sedative,anticholinergic
+lorazepam,2,True,False
+diphenhydramine,1,True,True
+metformin,2,False,False
+amitriptyline,1,True,True
+diazepam,1,True,False
+furosemide,1,False,False
+oxybutynin,2,False,True
+gabapentin,3,True,False
+omeprazole,1,False,False
+atenolol,1,False,False

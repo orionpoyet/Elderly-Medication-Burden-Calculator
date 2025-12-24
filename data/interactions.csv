@@ -1,0 +1,5 @@
+drug_a,drug_b,severity
+lorazepam,diphenhydramine,major
+lorazepam,zolpidem,major
+sertraline,zolpidem,moderate
+metformin,sertraline,minor

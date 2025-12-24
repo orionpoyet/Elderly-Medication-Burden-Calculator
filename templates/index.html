@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Elder Med Manager{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="hero-content">
+        <h1>Medication Burden Calculator for Elderly Patients</h1>
+        <p class="subtitle">Assess medication complexity, interactions, and risks for patients 65+</p>
+        
+        <div class="features">
+            <div class="feature">
+                <i class="fas fa-pills"></i>
+                <h3>Pill Burden Analysis</h3>
+                <p>Calculate daily medication load and adherence risk</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Beers Criteria Check</h3>
+                <p>Identify potentially inappropriate medications</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-hand-paper"></i>
+                <h3>Fall Risk Assessment</h3>
+                <p>Evaluate medication-related fall risk</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-brain"></i>
+                <h3>Cognitive Load Score</h3>
+                <p>Measure regimen complexity</p>
+            </div>
+        </div>
+        
+        <a href="{{ url_for('analyze') }}" class="btn btn-primary btn-large">
+            <i class="fas fa-play-circle"></i> Start Analysis
+        </a>
+    </div>
+</div>
+
+<div class="info-section">
+    <h2>How It Works</h2>
+    <div class="steps">
+        <div class="step">
+            <div class="step-number">1</div>
+            <h3>Enter Patient Information</h3>
+            <p>Age, cognitive status, and caregiver availability</p>
+        </div>
+        <div class="step">
+            <div class="step-number">2</div>
+            <h3>Add Medications</h3>
+            <p>Include all prescriptions, OTC drugs, and supplements</p>
+        </div>
+        <div class="step">
+            <div class="step-number">3</div>
+            <h3>Get Comprehensive Analysis</h3>
+            <p>Receive detailed risk assessment and recommendations</p>
+        </div>
+        <div class="step">
+            <div class="step-number">4</div>
+            <h3>Export Reports</h3>
+            <p>Download PDF or CSV for medical records</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

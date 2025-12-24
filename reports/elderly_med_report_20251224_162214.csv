@@ -1,0 +1,44 @@
+ELDER MED MANAGER - COMPREHENSIVE REPORT
+Generated:,2025-12-24 16:22:14
+
+PATIENT INFORMATION
+Age,67
+Cognitive Impairment,Yes
+Caregiver Present,Yes
+
+CURRENT MEDICATIONS
+Medication,Doses Per Day
+clonazepam,2
+dilaudid,1
+
+BURDEN ASSESSMENT
+Metric,Value,Assessment
+Total Medications,2,
+Total Pills Per Day,3,LOW
+Predicted Adherence,73.0%,
+Fall Risk Score,3/10,LOW
+Anticholinergic Burden,0,
+MCLS Score,7,LOW
+DIRS Score,0,Low
+
+BEERS CRITERIA VIOLATIONS
+Medication,Category,Risk Level,Rationale,Recommendation
+clonazepam,Benzodiazepine,high,"Long half-life, prolonged sedation, falls",Avoid
+
+DAILY MEDICATION SCHEDULE
+Time,Medications
+Morning (8 AM),"clonazepam, dilaudid"
+Noon (12 PM),(none)
+Evening (6 PM),clonazepam
+Bedtime (10 PM),(none)
+
+DRUG INTERACTIONS
+No interactions detected in database
+
+SIMPLIFICATION RECOMMENDATIONS
+
+KEY RISK FACTORS
+❌ 1 Beers Criteria violation(s)
+
+DISCLAIMER
+This is an educational tool only. All medication changes must be made in consultation with healthcare professionals.

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Elder Med Manager{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="{{ url_for('index') }}" class="logo">
+                <i class="fas fa-heartbeat"></i> Elder Med Manager
+            </a>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('analyze') }}">Analyze</a>
+                <a href="#about">About</a>
+                <a href="#contact">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer>
+        <div class="container">
+            <p><strong>Disclaimer:</strong> This tool is for educational purposes only. Always consult with healthcare professionals for medical decisions.</p>
+            <p>&copy; 2024 Elder Med Manager. For geriatric medication management.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

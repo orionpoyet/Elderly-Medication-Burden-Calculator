@@ -1,0 +1,52 @@
+ELDER MED MANAGER - COMPREHENSIVE REPORT
+Generated:,2025-12-24 15:57:07
+
+PATIENT INFORMATION
+Age,100
+Cognitive Impairment,Yes
+Caregiver Present,Yes
+
+CURRENT MEDICATIONS
+Medication,Doses Per Day
+clonazepam,8
+warfarin,4
+dilaudid,3
+
+BURDEN ASSESSMENT
+Metric,Value,Assessment
+Total Medications,3,
+Total Pills Per Day,15,VERY HIGH
+Predicted Adherence,28.0%,
+Fall Risk Score,5/10,MODERATE
+Anticholinergic Burden,1,
+MCLS Score,21,HIGH
+DIRS Score,0,Low
+
+BEERS CRITERIA VIOLATIONS
+Medication,Category,Risk Level,Rationale,Recommendation
+clonazepam,Benzodiazepine,high,"Long half-life, prolonged sedation, falls",Avoid
+
+DAILY MEDICATION SCHEDULE
+Time,Medications
+Morning (8 AM),"clonazepam, warfarin, dilaudid"
+Noon (12 PM),"clonazepam, warfarin, dilaudid"
+Evening (6 PM),"clonazepam, warfarin, dilaudid"
+Bedtime (10 PM),"clonazepam, warfarin"
+
+DRUG INTERACTIONS
+No interactions detected in database
+
+SIMPLIFICATION RECOMMENDATIONS
+🔄 clonazepam: Currently 8x daily. Ask doctor about extended-release formulation for once-daily dosing.
+🔄 warfarin: Currently 4x daily. Ask doctor about extended-release formulation for once-daily dosing.
+🔄 dilaudid: Currently 3x daily. Ask doctor about extended-release formulation for once-daily dosing.
+⚠️  Total daily pill burden is 15. Consider medication review to identify drugs that could be discontinued or combined.
+
+KEY RISK FACTORS
+❌ 1 Beers Criteria violation(s)
+⚠️  MODERATE fall risk
+⚠️  Low predicted adherence (28.0%)
+⚠️  High pill burden (15 pills/day)
+
+DISCLAIMER
+This is an educational tool only. All medication changes must be made in consultation with healthcare professionals.

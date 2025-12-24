@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Analyze - Elder Med Manager{% endblock %}
+
+{% block content %}
+<div class="analyze-container">
+    <h1><i class="fas fa-stethoscope"></i> Medication Analysis</h1>
+    
+    <div class="form-container">
+        <div class="form-section">
+            <h2><i class="fas fa-user-md"></i> Patient Information</h2>
+            
+            <div class="form-group">
+                <label for="age">Patient Age *</label>
+                <input type="number" id="age" name="age" min="65" max="120" value="75" required>
+                <small>Must be 65 or older for accurate assessment</small>
+            </div>
+            
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="cognitive_impairment">
+                    <span>Patient has cognitive impairment (dementia, MCI)</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="caregiver_present">
+                    <span>Caregiver manages medications</span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h2><i class="fas fa-prescription-bottle-alt"></i> Medications</h2>
+            <p class="help-text">Include ALL medications: prescriptions, OTC, vitamins, supplements</p>
+            
+            <div id="medications-container">
+                <div class="medication-row" data-id="1">
+                    <div class="med-input">
+                        <label>Medication Name</label>
+                        <input type="text" class="med-name" placeholder="e.g., Lisinopril, Tylenol, Vitamin D" required>
+                    </div>
+                    <div class="med-input">
+                        <label>Times Per Day</label>
+                        <input type="number" class="med-frequency" min="1" max="6" value="1" required>
+                    </div>
+                    <button type="button" class="btn-remove-med" onclick="removeMedication(1)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-secondary" onclick="addMedication()">
+                <i class="fas fa-plus"></i> Add Medication
+            </button>
+            
+            <div class="med-tips">
+                <p><strong>Tips:</strong></p>
+                <ul>
+                    <li>Enter brand or generic names</li>
+                    <li>Include supplements like calcium, vitamins</li>
+                    <li>Include OTC pain relievers, sleep aids</li>
+                    <li>Don't forget eye drops, inhalers, patches</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" class="btn btn-primary" onclick="analyzeMedications()">
+                <i class="fas fa-chart-bar"></i> Analyze Medication Burden
+            </button>
+        </div>
+    </div>
+    
+    <!-- Results will be displayed here -->
+    <div id="results-container" style="display: none;">
+        <div class="results-header">
+            <h2><i class="fas fa-file-medical-alt"></i> Analysis Results</h2>
+            <div class="result-actions">
+                <button class="btn btn-outline" onclick="exportPDF()">
+                    <i class="fas fa-file-pdf"></i> PDF Report
+                </button>
+                <button class="btn btn-outline" onclick="exportCSV()">
+                    <i class="fas fa-file-csv"></i> CSV Export
+                </button>
+            </div>
+        </div>
+        
+        <div id="results-content">
+            <!-- Results will be loaded here via JavaScript -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let medicationCount = 1;
+
+function addMedication() {
+    medicationCount++;
+    const container = document.getElementById('medications-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'medication-row';
+    newRow.setAttribute('data-id', medicationCount);
+    newRow.innerHTML = `
+        <div class="med-input">
+            <label>Medication Name</label>
+            <input type="text" class="med-name" placeholder="e.g., Lisinopril, Tylenol, Vitamin D" required>
+        </div>
+        <div class="med-input">
+            <label>Times Per Day</label>
+            <input type="number" class="med-frequency" min="1" max="6" value="1" required>
+        </div>
+        <button type="button" class="btn-remove-med" onclick="removeMedication(${medicationCount})">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    container.appendChild(newRow);
+}
+
+function removeMedication(id) {
+    const row = document.querySelector(`[data-id="${id}"]`);
+    if (row && medicationCount > 1) {
+        row.remove();
+    }
+}
+
+async function analyzeMedications() {
+    // Collect data
+    const patientInfo = {
+        age: parseInt(document.getElementById('age').value),
+        cognitive_impairment: document.getElementById('cognitive_impairment').checked,
+        caregiver_present: document.getElementById('caregiver_present').checked
+    };
+    
+    const medications = [];
+    const rows = document.querySelectorAll('.medication-row');
+    rows.forEach(row => {
+        const name = row.querySelector('.med-name').value.trim();
+        const freq = parseInt(row.querySelector('.med-frequency').value);
+        if (name) {
+            medications.push({
+                name: name,
+                doses_per_day: freq
+            });
+        }
+    });
+    
+    if (medications.length === 0) {
+        alert('Please add at least one medication');
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('results-container').style.display = 'block';
+    document.getElementById('results-content').innerHTML = `
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Analyzing medications... This may take a moment.</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                patient_info: patientInfo,
+                medications: medications
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayResults(data.report);
+        } else {
+            document.getElementById('results-content').innerHTML = `
+                <div class="error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h3>Analysis Error</h3>
+                    <p>${data.error || 'Unknown error occurred'}</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        document.getElementById('results-content').innerHTML = `
+            <div class="error">
+                <i class="fas fa-exclamation-circle"></i>
+                <h3>Connection Error</h3>
+                <p>Unable to connect to server. Please try again.</p>
+            </div>
+        `;
+    }
+}
+
+function displayResults(report) {
+    // Format and display the results
+    // You'll need to implement this based on your report structure
+    const html = `
+        <div class="result-summary">
+            <h3>Summary</h3>
+            <div class="summary-cards">
+                <div class="summary-card ${report.pill_burden_level.toLowerCase()}">
+                    <h4>Pill Burden</h4>
+                    <p class="value">${report.total_pills} pills/day</p>
+                    <p class="label">${report.pill_burden_level}</p>
+                </div>
+                <div class="summary-card ${report.dir_risk.toLowerCase()}">
+                    <h4>Interaction Risk</h4>
+                    <p class="value">${report.dir_score}</p>
+                    <p class="label">${report.dir_risk}</p>
+                </div>
+                <div class="summary-card ${report.fall_risk_category.toLowerCase()}">
+                    <h4>Fall Risk</h4>
+                    <p class="value">${report.fall_risk_score}/10</p>
+                    <p class="label">${report.fall_risk_category}</p>
+                </div>
+            </div>
+        </div>
+        <!-- Add more detailed sections here -->
+    `;
+    
+    document.getElementById('results-content').innerHTML = html;
+}
+
+function exportPDF() {
+    window.location.href = '/export/pdf';
+}
+
+function exportCSV() {
+    window.location.href = '/export/csv';
+}
+</script>
+{% endblock %}

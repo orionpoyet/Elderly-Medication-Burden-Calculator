@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+venv/
+env/
+.DS_Store
+*.log
+reports/  # Optional - if you don't want to commit reports
