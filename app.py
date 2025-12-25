@@ -36,8 +36,8 @@ def index():
     """Home page"""
     return render_template('index.html')
 
-@app.route('/analyze')
-def analyze_page():
+@app.route('/analyze')  # This is the URL
+def analyze_page():      # This is the function name
     """Analyze medications page"""
     return render_template('analyze.html')
 
