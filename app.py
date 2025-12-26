@@ -51,6 +51,165 @@ def contact():
     """Contact page"""
     return render_template('contact.html')
 
+#added after app.route('/contact') and before app.rout('/api/analye')
+@app.route('/api/check-medication', methods=['POST'])
+def check_medication_realtime():
+    """
+    Real-time medication checking endpoint
+    Checks a single medication against existing medications for immediate warnings
+    """
+    try:
+        data = request.json
+        
+        # Get the medication being checked
+        new_med_name = data.get('medication_name', '').strip()
+        existing_meds = data.get('existing_medications', [])
+        patient_age = int(data.get('age', 65))
+        
+        if not new_med_name:
+            return jsonify({
+                "success": True,
+                "warnings": [],
+                "safe": True
+            })
+        
+        # Import necessary functions
+        from interaction_database import check_interaction, normalize_drug_name
+        from elderly_med_burden import BEERS_CRITERIA, FALL_RISK_DRUGS
+        
+        warnings = []
+        normalized_name = normalize_drug_name(new_med_name)
+        
+        # ========== CHECK 1: Beers Criteria ==========
+        if normalized_name in BEERS_CRITERIA:
+            beers_info = BEERS_CRITERIA[normalized_name]
+            warnings.append({
+                "type": "beers_criteria",
+                "severity": beers_info["risk"],  # "high" or "moderate"
+                "icon": "⚠️" if beers_info["risk"] == "moderate" else "🚨",
+                "title": f"{new_med_name} - Potentially Inappropriate for Elderly",
+                "message": beers_info["rationale"],
+                "recommendation": beers_info["recommendation"],
+                "category": beers_info["category"]
+            })
+        
+        # ========== CHECK 2: Drug Interactions ==========
+        for existing_med in existing_meds:
+            existing_name = existing_med.get('name', '')
+            if not existing_name:
+                continue
+                
+            interaction = check_interaction(new_med_name, existing_name)
+            if interaction:
+                severity = interaction.get('severity', 'moderate')
+                if severity in ['high', 'moderate']:  # Only show significant interactions
+                    warnings.append({
+                        "type": "interaction",
+                        "severity": severity,
+                        "icon": "🚨" if severity == "high" else "⚠️",
+                        "title": f"Drug Interaction: {new_med_name} + {existing_name}",
+                        "message": interaction.get('description', 'Interaction detected'),
+                        "interacting_drug": existing_name,
+                        "recommendation": "Consult healthcare provider before combining these medications"
+                    })
+        
+        # ========== CHECK 3: Fall Risk Accumulation ==========
+        if normalized_name in FALL_RISK_DRUGS:
+            # Count how many existing meds also increase fall risk
+            fall_risk_count = sum(
+                1 for med in existing_meds 
+                if normalize_drug_name(med.get('name', '')) in FALL_RISK_DRUGS
+            )
+            
+            if fall_risk_count >= 1:  # Already have fall-risk meds
+                total_fall_risk_meds = fall_risk_count + 1
+                warnings.append({
+                    "type": "fall_risk",
+                    "severity": "high" if total_fall_risk_meds >= 3 else "moderate",
+                    "icon": "⚠️",
+                    "title": f"Fall Risk Medication #{total_fall_risk_meds}",
+                    "message": f"This is the {ordinal(total_fall_risk_meds)} medication that increases fall risk. Multiple fall-risk medications compound the danger.",
+                    "recommendation": "Consider fall prevention strategies and discuss alternatives with physician",
+                    "total_fall_risk_meds": total_fall_risk_meds
+                })
+            else:  # First fall-risk med
+                warnings.append({
+                    "type": "fall_risk",
+                    "severity": "low",
+                    "icon": "ℹ️",
+                    "title": "Fall Risk Medication",
+                    "message": f"{new_med_name} may increase fall risk in elderly patients.",
+                    "recommendation": "Monitor for dizziness, drowsiness, or balance issues"
+                })
+        
+        # ========== CHECK 4: Anticholinergic Burden ==========
+        from elderly_med_burden import ANTICHOLINERGIC_BURDEN
+        
+        if normalized_name in ANTICHOLINERGIC_BURDEN:
+            anticholinergic_score = ANTICHOLINERGIC_BURDEN[normalized_name]
+            
+            # Calculate existing anticholinergic burden
+            existing_burden = sum(
+                ANTICHOLINERGIC_BURDEN.get(normalize_drug_name(med.get('name', '')), 0)
+                for med in existing_meds
+            )
+            
+            new_total = existing_burden + anticholinergic_score
+            
+            if new_total >= 3:  # High burden threshold
+                warnings.append({
+                    "type": "anticholinergic",
+                    "severity": "high",
+                    "icon": "🧠",
+                    "title": "High Anticholinergic Burden",
+                    "message": f"Adding {new_med_name} increases total anticholinergic burden to {new_total}. High burden associated with cognitive impairment, confusion, and increased fall risk.",
+                    "recommendation": "Consider alternatives with lower anticholinergic effects",
+                    "anticholinergic_score": anticholinergic_score,
+                    "new_total": new_total
+                })
+        
+        # ========== CHECK 5: High Pill Burden ==========
+        total_existing_pills = sum(med.get('doses_per_day', 1) for med in existing_meds)
+        if total_existing_pills >= 10:  # Already high burden
+            warnings.append({
+                "type": "pill_burden",
+                "severity": "moderate",
+                "icon": "💊",
+                "title": "High Pill Burden",
+                "message": f"Patient already takes {total_existing_pills} pills per day. Adding more medications increases complexity and reduces adherence.",
+                "recommendation": "Consider if this medication is essential or if existing medications could be simplified"
+            })
+        
+        # Sort warnings by severity (high first, then moderate, then low)
+        severity_order = {"high": 0, "moderate": 1, "low": 2}
+        warnings.sort(key=lambda w: severity_order.get(w.get("severity", "low"), 2))
+        
+        return jsonify({
+            "success": True,
+            "warnings": warnings,
+            "safe": len([w for w in warnings if w['severity'] in ['high', 'moderate']]) == 0,
+            "warning_count": len(warnings),
+            "high_severity_count": len([w for w in warnings if w['severity'] == 'high'])
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "warnings": []
+        }), 500
+
+
+def ordinal(n):
+    """Convert number to ordinal string (1 -> 1st, 2 -> 2nd, etc.)"""
+    if 10 <= n % 100 <= 20:
+        suffix = 'th'
+    else:
+        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
+    return f"{n}{suffix}"
+
+#end of change
+
 @app.route('/api/analyze', methods=['POST'])
 def analyze_api():
     """API endpoint for analysis"""
