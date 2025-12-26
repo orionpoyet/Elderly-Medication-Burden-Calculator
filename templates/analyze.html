@@ -3,13 +3,6 @@
 {% block title %}Analyze - Elder Med Manager{% endblock %}
 
 {% block content %}
-<!-- change starts here-->
-{% block scripts %}
-<!-- Add autocomplete script FIRST -->
-<script src="{{ url_for('static', filename='js/autocomplete.js') }}"></script>
-<script src="{{ url_for('static', filename='js/med-checker.js') }}"></script>
-<!-- change ends here-->
-
 <div class="analyze-container">
     <h1><i class="fas fa-stethoscope"></i> Medication Analysis</h1>
     
@@ -116,7 +109,8 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Real-time Medication Checker Script -->
+<!-- Add autocomplete script FIRST -->
+<script src="{{ url_for('static', filename='js/autocomplete.js') }}"></script>
 <script src="{{ url_for('static', filename='js/med-checker.js') }}"></script>
 
 <script>
@@ -135,7 +129,8 @@ function addMedication() {
                    name="medication_name_${medicationCount}"
                    class="med-name" 
                    placeholder="e.g., Lisinopril, Tylenol, Vitamin D" 
-                   required>
+                   required
+                   autocomplete="off">
         </div>
         <div class="med-input">
             <label>Times Per Day</label>
@@ -153,7 +148,12 @@ function addMedication() {
     `;
     container.appendChild(newRow);
     
-    // Reinitialize real-time checker for new inputs
+    // Initialize autocomplete for new input
+    if (window.DrugAutocomplete) {
+        new DrugAutocomplete(newRow.querySelector('.med-name'));
+    }
+    
+    // Reinitialize checker
     if (window.MedChecker) {
         window.MedChecker.reinitialize();
     }
@@ -164,7 +164,6 @@ function removeMedication(id) {
     if (row && medicationCount > 1) {
         row.remove();
         
-        // Reinitialize checker after removal
         if (window.MedChecker) {
             window.MedChecker.reinitialize();
         }

@@ -55,10 +55,12 @@ def contact():
     """Contact page"""
     return render_template('contact.html')
 
+#added after app.route('/contact') and before app.rout('/api/analye')
 @app.route('/api/check-medication', methods=['POST'])
 def check_medication_realtime():
     """
-    Real-time medication checking with RxNorm integration
+    Real-time medication checking endpoint
+    Checks a single medication against existing medications for immediate warnings
     """
     try:
         data = request.json
@@ -75,35 +77,21 @@ def check_medication_realtime():
                 "safe": True
             })
         
+        # Import necessary functions
+        from interaction_database import check_interaction, normalize_drug_name
+        from elderly_med_burden import BEERS_CRITERIA, FALL_RISK_DRUGS
+        
         warnings = []
-        
-        # ========== CHECK 0: RxNorm Normalization ==========
-        normalized_name = RxNormAPI.normalize_drug_name(new_med_name)
-        rxcui = RxNormAPI.get_rxcui(new_med_name)
-        drug_classes = []
-        
-        if rxcui:
-            drug_classes = RxNormAPI.get_drug_classes(rxcui)
-            
-            if normalized_name.lower() != new_med_name.lower():
-                warnings.append({
-                    "type": "normalization",
-                    "severity": "info",
-                    "icon": "🔍",
-                    "title": "Drug Name Normalized",
-                    "message": f"'{new_med_name}' → '{normalized_name}' (Standard name from RxNorm)",
-                    "recommendation": "Using standardized name for accurate checking"
-                })
+        normalized_name = normalize_drug_name(new_med_name)
         
         # ========== CHECK 1: Beers Criteria ==========
-        from interaction_database import BEERS_CRITERIA
         if normalized_name in BEERS_CRITERIA:
             beers_info = BEERS_CRITERIA[normalized_name]
             warnings.append({
                 "type": "beers_criteria",
-                "severity": beers_info["risk"],
+                "severity": beers_info["risk"],  # "high" or "moderate"
                 "icon": "⚠️" if beers_info["risk"] == "moderate" else "🚨",
-                "title": f"{normalized_name} - Potentially Inappropriate for Elderly",
+                "title": f"{new_med_name} - Potentially Inappropriate for Elderly",
                 "message": beers_info["rationale"],
                 "recommendation": beers_info["recommendation"],
                 "category": beers_info["category"]
@@ -115,56 +103,29 @@ def check_medication_realtime():
             if not existing_name:
                 continue
                 
-            # Get normalized existing name
-            existing_normalized = RxNormAPI.normalize_drug_name(existing_name)
-            
-            from interaction_database import check_interaction
-            interaction = check_interaction(normalized_name, existing_normalized)
+            interaction = check_interaction(new_med_name, existing_name)
             if interaction:
                 severity = interaction.get('severity', 'moderate')
-                if severity in ['high', 'moderate']:
+                if severity in ['high', 'moderate']:  # Only show significant interactions
                     warnings.append({
                         "type": "interaction",
                         "severity": severity,
                         "icon": "🚨" if severity == "high" else "⚠️",
-                        "title": f"Drug Interaction: {normalized_name} + {existing_normalized}",
+                        "title": f"Drug Interaction: {new_med_name} + {existing_name}",
                         "message": interaction.get('description', 'Interaction detected'),
-                        "interacting_drug": existing_normalized,
+                        "interacting_drug": existing_name,
                         "recommendation": "Consult healthcare provider before combining these medications"
                     })
         
-        # ========== CHECK 3: Add Drug Class Information ==========
-        if drug_classes:
-            warnings.append({
-                "type": "drug_class",
-                "severity": "info",
-                "icon": "🏷️",
-                "title": "Drug Classification",
-                "message": f"Classified as: {', '.join(drug_classes[:3])}",
-                "recommendation": "Understanding drug class helps identify similar medications"
-            })
-        
-        # ========== CHECK 4: Spelling Suggestions ==========
-        spelling_suggestion = RxNormAPI.check_spelling(new_med_name)
-        if spelling_suggestion and spelling_suggestion.lower() != new_med_name.lower():
-            warnings.append({
-                "type": "spelling",
-                "severity": "info",
-                "icon": "✏️",
-                "title": "Spelling Suggestion",
-                "message": f"Did you mean: '{spelling_suggestion}'?",
-                "recommendation": "Correct spelling ensures accurate checking"
-            })
-        
-        # ========== CHECK 5: Fall Risk Accumulation ==========
-        from elderly_med_burden import FALL_RISK_DRUGS
+        # ========== CHECK 3: Fall Risk Accumulation ==========
         if normalized_name in FALL_RISK_DRUGS:
+            # Count how many existing meds also increase fall risk
             fall_risk_count = sum(
                 1 for med in existing_meds 
-                if RxNormAPI.normalize_drug_name(med.get('name', '')) in FALL_RISK_DRUGS
+                if normalize_drug_name(med.get('name', '')) in FALL_RISK_DRUGS
             )
             
-            if fall_risk_count >= 1:
+            if fall_risk_count >= 1:  # Already have fall-risk meds
                 total_fall_risk_meds = fall_risk_count + 1
                 warnings.append({
                     "type": "fall_risk",
@@ -175,43 +136,45 @@ def check_medication_realtime():
                     "recommendation": "Consider fall prevention strategies and discuss alternatives with physician",
                     "total_fall_risk_meds": total_fall_risk_meds
                 })
-            else:
+            else:  # First fall-risk med
                 warnings.append({
                     "type": "fall_risk",
                     "severity": "low",
                     "icon": "ℹ️",
                     "title": "Fall Risk Medication",
-                    "message": f"{normalized_name} may increase fall risk in elderly patients.",
+                    "message": f"{new_med_name} may increase fall risk in elderly patients.",
                     "recommendation": "Monitor for dizziness, drowsiness, or balance issues"
                 })
         
-        # ========== CHECK 6: Anticholinergic Burden ==========
+        # ========== CHECK 4: Anticholinergic Burden ==========
         from elderly_med_burden import ANTICHOLINERGIC_BURDEN
+        
         if normalized_name in ANTICHOLINERGIC_BURDEN:
             anticholinergic_score = ANTICHOLINERGIC_BURDEN[normalized_name]
             
+            # Calculate existing anticholinergic burden
             existing_burden = sum(
-                ANTICHOLINERGIC_BURDEN.get(RxNormAPI.normalize_drug_name(med.get('name', '')), 0)
+                ANTICHOLINERGIC_BURDEN.get(normalize_drug_name(med.get('name', '')), 0)
                 for med in existing_meds
             )
             
             new_total = existing_burden + anticholinergic_score
             
-            if new_total >= 3:
+            if new_total >= 3:  # High burden threshold
                 warnings.append({
                     "type": "anticholinergic",
                     "severity": "high",
                     "icon": "🧠",
                     "title": "High Anticholinergic Burden",
-                    "message": f"Adding {normalized_name} increases total anticholinergic burden to {new_total}. High burden associated with cognitive impairment, confusion, and increased fall risk.",
+                    "message": f"Adding {new_med_name} increases total anticholinergic burden to {new_total}. High burden associated with cognitive impairment, confusion, and increased fall risk.",
                     "recommendation": "Consider alternatives with lower anticholinergic effects",
                     "anticholinergic_score": anticholinergic_score,
                     "new_total": new_total
                 })
         
-        # ========== CHECK 7: High Pill Burden ==========
+        # ========== CHECK 5: High Pill Burden ==========
         total_existing_pills = sum(med.get('doses_per_day', 1) for med in existing_meds)
-        if total_existing_pills >= 10:
+        if total_existing_pills >= 10:  # Already high burden
             warnings.append({
                 "type": "pill_burden",
                 "severity": "moderate",
@@ -221,26 +184,23 @@ def check_medication_realtime():
                 "recommendation": "Consider if this medication is essential or if existing medications could be simplified"
             })
         
-        # Sort warnings by severity (high first, then moderate, then low, then info)
-        severity_order = {"high": 0, "moderate": 1, "low": 2, "info": 3}
-        warnings.sort(key=lambda w: severity_order.get(w.get("severity", "info"), 3))
+        # Sort warnings by severity (high first, then moderate, then low)
+        severity_order = {"high": 0, "moderate": 1, "low": 2}
+        warnings.sort(key=lambda w: severity_order.get(w.get("severity", "low"), 2))
         
         return jsonify({
             "success": True,
             "warnings": warnings,
-            "rxnorm_data": {
-                "normalized_name": normalized_name,
-                "rxcui": rxcui,
-                "drug_classes": drug_classes,
-                "is_normalized": normalized_name.lower() != new_med_name.lower()
-            },
-            "safe": len([w for w in warnings if w['severity'] in ['high', 'moderate']]) == 0
+            "safe": len([w for w in warnings if w['severity'] in ['high', 'moderate']]) == 0,
+            "warning_count": len(warnings),
+            "high_severity_count": len([w for w in warnings if w['severity'] == 'high'])
         })
         
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": str(e),
+            "warnings": []
         }), 500
 
 
