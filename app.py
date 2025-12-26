@@ -379,7 +379,11 @@ def generate_comprehensive_report_web(patient_info, meds, dir_triggers, mcls_sco
     # Calculate all metrics
     beers_violations = assess_beers_criteria(meds)
     fall_risk_score, fall_risk_category, fall_risk_meds = calculate_fall_risk(meds, patient_info["age"])
-    schedule = generate_daily_schedule(meds)
+    
+    # Get custom times from patient_info if available
+    custom_times = patient_info.get("custom_times", None)
+    schedule = generate_daily_schedule(meds, custom_times)  # <-- UPDATED LINE
+    
     total_pills, total_meds, pill_burden_level, pill_concern = calculate_pill_burden(meds)
     adherence_prediction = predict_adherence(meds, patient_info["age"], patient_info["cognitive_impairment"])
     anticholinergic_score, anticholinergic_contributors = calculate_anticholinergic_burden(meds)

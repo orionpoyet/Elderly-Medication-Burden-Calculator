@@ -250,33 +250,61 @@ def calculate_fall_risk(meds, patient_age):
     
     return fall_risk_score, fall_risk_category, fall_risk_meds
 
-def generate_daily_schedule(meds):
-    """Generate visual daily medication schedule"""
-    # Group medications by timing
-    schedule = {
-        "Morning (8 AM)": [],
-        "Noon (12 PM)": [],
-        "Evening (6 PM)": [],
-        "Bedtime (10 PM)": []
+def generate_daily_schedule(meds, custom_times=None):
+    """
+    Generate visual daily medication schedule
+    
+    Args:
+        meds: List of medication dictionaries
+        custom_times: Optional dict with custom timing preferences
+                     {"morning": "08:00", "noon": "12:00", "evening": "18:00", "bedtime": "22:00"}
+    
+    Returns:
+        Dictionary with time slots as keys and medication lists as values
+    """
+    # Default times if not provided
+    default_times = {
+        "morning": "08:00",
+        "noon": "12:00", 
+        "evening": "18:00",
+        "bedtime": "22:00"
     }
+    
+    # Use custom times if provided, otherwise use defaults
+    times = custom_times if custom_times else default_times
+    
+    # Create schedule with custom times
+    schedule = {
+        f"Morning ({times['morning']})": [],
+        f"Noon ({times['noon']})": [],
+        f"Evening ({times['evening']})": [],
+        f"Bedtime ({times['bedtime']})": []
+    }
+    
+    # Map to keys for easier access
+    time_keys = list(schedule.keys())
     
     # Simple heuristic: distribute based on doses per day
     for med in meds:
         doses = med["doses_per_day"]
         if doses == 1:
-            schedule["Morning (8 AM)"].append(med["name"])
+            # Once daily - morning
+            schedule[time_keys[0]].append(med["name"])
         elif doses == 2:
-            schedule["Morning (8 AM)"].append(med["name"])
-            schedule["Evening (6 PM)"].append(med["name"])
+            # Twice daily - morning and evening
+            schedule[time_keys[0]].append(med["name"])
+            schedule[time_keys[2]].append(med["name"])
         elif doses == 3:
-            schedule["Morning (8 AM)"].append(med["name"])
-            schedule["Noon (12 PM)"].append(med["name"])
-            schedule["Evening (6 PM)"].append(med["name"])
+            # Three times daily - morning, noon, evening
+            schedule[time_keys[0]].append(med["name"])
+            schedule[time_keys[1]].append(med["name"])
+            schedule[time_keys[2]].append(med["name"])
         elif doses >= 4:
-            schedule["Morning (8 AM)"].append(med["name"])
-            schedule["Noon (12 PM)"].append(med["name"])
-            schedule["Evening (6 PM)"].append(med["name"])
-            schedule["Bedtime (10 PM)"].append(med["name"])
+            # Four or more times daily - all slots
+            schedule[time_keys[0]].append(med["name"])
+            schedule[time_keys[1]].append(med["name"])
+            schedule[time_keys[2]].append(med["name"])
+            schedule[time_keys[3]].append(med["name"])
     
     return schedule
 

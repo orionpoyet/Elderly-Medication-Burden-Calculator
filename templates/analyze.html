@@ -26,6 +26,62 @@
                     <span>Caregiver manages medications</span>
                 </label>
             </div>
+
+            <!-- Add this in analyze.html AFTER the checkbox-group div -->
+<!-- Around line 32, after the caregiver_present checkbox -->
+
+            <div class="timing-preferences">
+                <h4>
+                    <i class="fas fa-clock"></i> 
+                    Medication Timing Preferences
+                </h4>
+                <p style="color: #7a7a7a; font-size: 0.9rem; margin-bottom: 1rem;">
+                    Customize when medications are typically taken. This will personalize the daily schedule.
+                </p>
+                
+                <div class="timing-grid">
+                    <div class="timing-slot">
+                        <label>
+                            <span class="timing-icon morning">☀️</span>
+                            Morning
+                        </label>
+                        <input type="time" id="morning-time" value="08:00">
+                    </div>
+                    
+                    <div class="timing-slot">
+                        <label>
+                            <span class="timing-icon noon">🌤️</span>
+                            Midday
+                        </label>
+                        <input type="time" id="noon-time" value="12:00">
+                    </div>
+                    
+                    <div class="timing-slot">
+                        <label>
+                            <span class="timing-icon evening">🌅</span>
+                            Evening
+                        </label>
+                        <input type="time" id="evening-time" value="18:00">
+                    </div>
+                    
+                    <div class="timing-slot">
+                        <label>
+                            <span class="timing-icon bedtime">🌙</span>
+                            Bedtime
+                        </label>
+                        <input type="time" id="bedtime-time" value="22:00">
+                    </div>
+                </div>
+                
+                <button type="button" class="btn-reset-times" onclick="resetTimingDefaults()">
+                    <i class="fas fa-undo"></i> Reset to Defaults
+                </button>
+                
+                <div class="timing-note">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Tip:</strong> Set times based on patient's actual daily routine for more accurate adherence predictions.
+                </div>
+            </div>
         </div>
         
         <div class="form-section">
@@ -115,6 +171,145 @@
 
 <script>
 let medicationCount = 1;
+
+// ADD these helper functions at the TOP of your <script> section in analyze.html
+// Add right after: let medicationCount = 1;
+
+/**
+ * Get custom medication timing preferences
+ */
+function getCustomTimes() {
+    return {
+        morning: document.getElementById('morning-time').value,
+        noon: document.getElementById('noon-time').value,
+        evening: document.getElementById('evening-time').value,
+        bedtime: document.getElementById('bedtime-time').value
+    };
+}
+
+/**
+ * Reset timing to defaults
+ */
+function resetTimingDefaults() {
+    document.getElementById('morning-time').value = '08:00';
+    document.getElementById('noon-time').value = '12:00';
+    document.getElementById('evening-time').value = '18:00';
+    document.getElementById('bedtime-time').value = '22:00';
+}
+
+/**
+ * Validate timing preferences (ensure logical order)
+ */
+function validateTimes() {
+    const times = getCustomTimes();
+    const timeValues = [
+        times.morning,
+        times.noon,
+        times.evening,
+        times.bedtime
+    ];
+    
+    // Check if times are in order
+    for (let i = 0; i < timeValues.length - 1; i++) {
+        if (timeValues[i] >= timeValues[i + 1]) {
+            alert('⚠️ Medication times should be in order (morning → noon → evening → bedtime)');
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// THEN UPDATE your existing analyzeMedications() function:
+// Find the line: const patientInfo = { ... }
+// And REPLACE it with this:
+
+async function analyzeMedications() {
+    // Validate timing preferences first
+    if (!validateTimes()) {
+        return;
+    }
+    
+    // Collect data
+    const patientInfo = {
+        age: parseInt(document.getElementById('age').value),
+        cognitive_impairment: document.getElementById('cognitive_impairment').checked,
+        caregiver_present: document.getElementById('caregiver_present').checked,
+        custom_times: getCustomTimes()  // <-- ADD THIS LINE
+    };
+    
+    const medications = [];
+    const rows = document.querySelectorAll('.medication-row');
+    rows.forEach(row => {
+        const name = row.querySelector('.med-name').value.trim();
+        const freq = parseInt(row.querySelector('.med-frequency').value);
+        if (name) {
+            medications.push({
+                name: name,
+                doses_per_day: freq
+            });
+        }
+    });
+    
+    if (medications.length === 0) {
+        alert('Please add at least one medication');
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('results-container').style.display = 'block';
+    document.getElementById('results-content').innerHTML = `
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Analyzing medications with your custom schedule...</p>
+        </div>
+    `;
+    
+    // Scroll to results
+    document.getElementById('results-container').scrollIntoView({ behavior: 'smooth' });
+    
+    try {
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                age: patientInfo.age,
+                cognitive_impairment: patientInfo.cognitive_impairment,
+                caregiver_present: patientInfo.caregiver_present,
+                custom_times: patientInfo.custom_times,  // <-- ADD THIS LINE
+                medications: medications
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayResults(data.report);
+        } else {
+            document.getElementById('results-content').innerHTML = `
+                <div class="error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h3>Analysis Error</h3>
+                    <p>${data.error || 'Unknown error occurred'}</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Analysis error:', error);
+        document.getElementById('results-content').innerHTML = `
+            <div class="error">
+                <i class="fas fa-exclamation-circle"></i>
+                <h3>Connection Error</h3>
+                <p>Unable to connect to server. Please try again.</p>
+                <p class="error-details">${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+// REST OF YOUR EXISTING CODE STAYS THE SAME
 
 function addMedication() {
     medicationCount++;
