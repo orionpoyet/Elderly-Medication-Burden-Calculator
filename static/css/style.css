@@ -996,3 +996,60 @@ footer strong {
         font-size: 2.5rem;
     }
 }
+
+
+/* Autocomplete Styles */
+.autocomplete-container {
+    position: absolute;
+    background: white;
+    border: 1px solid #a8c6df;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(168, 198, 223, 0.2);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    width: 100%;
+    margin-top: 5px;
+}
+
+.autocomplete-container.active {
+    display: block;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.autocomplete-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f8ff;
+    transition: background 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.autocomplete-item:hover {
+    background: #f8f7ff;
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-type {
+    font-size: 0.8rem;
+    background: #e0f7ff;
+    color: #6a8caf;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.med-input {
+    position: relative;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

@@ -3,6 +3,13 @@
 {% block title %}Analyze - Elder Med Manager{% endblock %}
 
 {% block content %}
+<!-- change starts here-->
+{% block scripts %}
+<!-- Add autocomplete script FIRST -->
+<script src="{{ url_for('static', filename='js/autocomplete.js') }}"></script>
+<script src="{{ url_for('static', filename='js/med-checker.js') }}"></script>
+<!-- change ends here-->
+
 <div class="analyze-container">
     <h1><i class="fas fa-stethoscope"></i> Medication Analysis</h1>
     
@@ -41,10 +48,11 @@
                     <div class="med-input">
                         <label>Medication Name</label>
                         <input type="text" 
-                               name="medication_name_1"
-                               class="med-name" 
-                               placeholder="e.g., Lisinopril, Tylenol, Vitamin D" 
-                               required>
+                            name="medication_name_1"
+                            class="med-name" 
+                            placeholder="e.g., Lisinopril, Tylenol, Vitamin D" 
+                            required
+                            autocomplete="off">
                     </div>
                     <div class="med-input">
                         <label>Times Per Day</label>
