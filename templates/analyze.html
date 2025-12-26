@@ -3,6 +3,13 @@
 {% block title %}Analyze - Elder Med Manager{% endblock %}
 
 {% block content %}
+<!-- change starts here-->
+{% block scripts %}
+<!-- Add autocomplete script FIRST -->
+<script src="{{ url_for('static', filename='js/autocomplete.js') }}"></script>
+<script src="{{ url_for('static', filename='js/med-checker.js') }}"></script>
+<!-- change ends here-->
+
 <div class="analyze-container">
     <h1><i class="fas fa-stethoscope"></i> Medication Analysis</h1>
     
@@ -60,6 +67,7 @@
                     <button type="button" class="btn-remove-med" onclick="removeMedication(1)">
                         <i class="fas fa-times"></i>
                     </button>
+                    <!-- Warning container will be added here automatically by JavaScript -->
                 </div>
             </div>
             
@@ -108,8 +116,7 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Add autocomplete script FIRST -->
-<script src="{{ url_for('static', filename='js/autocomplete.js') }}"></script>
+<!-- Real-time Medication Checker Script -->
 <script src="{{ url_for('static', filename='js/med-checker.js') }}"></script>
 
 <script>
@@ -128,8 +135,7 @@ function addMedication() {
                    name="medication_name_${medicationCount}"
                    class="med-name" 
                    placeholder="e.g., Lisinopril, Tylenol, Vitamin D" 
-                   required
-                   autocomplete="off">
+                   required>
         </div>
         <div class="med-input">
             <label>Times Per Day</label>
@@ -147,12 +153,7 @@ function addMedication() {
     `;
     container.appendChild(newRow);
     
-    // Initialize autocomplete for new input
-    if (window.DrugAutocomplete) {
-        new DrugAutocomplete(newRow.querySelector('.med-name'));
-    }
-    
-    // Reinitialize checker
+    // Reinitialize real-time checker for new inputs
     if (window.MedChecker) {
         window.MedChecker.reinitialize();
     }
@@ -163,6 +164,7 @@ function removeMedication(id) {
     if (row && medicationCount > 1) {
         row.remove();
         
+        // Reinitialize checker after removal
         if (window.MedChecker) {
             window.MedChecker.reinitialize();
         }
@@ -170,6 +172,7 @@ function removeMedication(id) {
 }
 
 async function analyzeMedications() {
+    // Collect data
     const patientInfo = {
         age: parseInt(document.getElementById('age').value),
         cognitive_impairment: document.getElementById('cognitive_impairment').checked,
@@ -194,6 +197,7 @@ async function analyzeMedications() {
         return;
     }
     
+    // Show loading
     document.getElementById('results-container').style.display = 'block';
     document.getElementById('results-content').innerHTML = `
         <div class="loading">
@@ -202,6 +206,7 @@ async function analyzeMedications() {
         </div>
     `;
     
+    // Scroll to results
     document.getElementById('results-container').scrollIntoView({ behavior: 'smooth' });
     
     try {
@@ -232,17 +237,20 @@ async function analyzeMedications() {
             `;
         }
     } catch (error) {
+        console.error('Analysis error:', error);
         document.getElementById('results-content').innerHTML = `
             <div class="error">
                 <i class="fas fa-exclamation-circle"></i>
                 <h3>Connection Error</h3>
                 <p>Unable to connect to server. Please try again.</p>
+                <p class="error-details">${error.message}</p>
             </div>
         `;
     }
 }
 
 function displayResults(report) {
+    // Determine severity classes for styling
     const pillBurdenClass = report.total_pills >= 15 ? 'high' : 
                             report.total_pills >= 10 ? 'medium' : 'low';
     
@@ -289,6 +297,7 @@ function displayResults(report) {
         html += `
             <div class="result-section alert-high">
                 <h3><i class="fas fa-exclamation-triangle"></i> Beers Criteria Violations</h3>
+                <p class="section-intro">These medications are potentially inappropriate for elderly patients:</p>
                 <div class="violations-list">
         `;
         
@@ -310,6 +319,29 @@ function displayResults(report) {
         `;
     }
     
+    // Drug Interactions
+    if (report.dir_triggers && report.dir_triggers.length > 0) {
+        html += `
+            <div class="result-section alert-moderate">
+                <h3><i class="fas fa-exchange-alt"></i> Drug Interactions (${report.dir_triggers.length})</h3>
+                <div class="interactions-list">
+        `;
+        
+        report.dir_triggers.forEach(([drug1, drug2, severity]) => {
+            html += `
+                <div class="interaction-card severity-${severity}">
+                    <h4>${drug1} + ${drug2}</h4>
+                    <span class="badge-${severity}">${severity.toUpperCase()}</span>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    }
+    
     // Daily Schedule
     if (report.schedule) {
         html += `
@@ -320,9 +352,10 @@ function displayResults(report) {
         
         for (const [time, meds] of Object.entries(report.schedule)) {
             const medCount = meds.length;
+            const hasMany = medCount > 3;
             
             html += `
-                <div class="schedule-slot ${medCount > 0 ? 'has-meds' : ''}">
+                <div class="schedule-slot ${medCount > 0 ? 'has-meds' : ''} ${hasMany ? 'many-meds' : ''}">
                     <div class="schedule-time">${time}</div>
                     <div class="schedule-meds">
             `;
@@ -344,9 +377,60 @@ function displayResults(report) {
         
         html += `
                 </div>
+                <p class="schedule-note">💡 <strong>Tip:</strong> Use a pill organizer to prepare medications weekly</p>
             </div>
         `;
     }
+    
+    // Simplification Recommendations
+    if (report.simplification_recs && report.simplification_recs.length > 0) {
+        html += `
+            <div class="result-section">
+                <h3><i class="fas fa-lightbulb"></i> Simplification Recommendations</h3>
+                <div class="recommendations-list">
+        `;
+        
+        report.simplification_recs.forEach(rec => {
+            html += `<div class="recommendation-item">${rec}</div>`;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    }
+    
+    // Scores
+    html += `
+        <div class="result-section">
+            <h3><i class="fas fa-calculator"></i> Assessment Scores</h3>
+            <div class="scores-grid">
+                <div class="score-card">
+                    <h4>MCLS (Medication Cognitive Load)</h4>
+                    <p class="score-value">${report.mcls_score}</p>
+                    <p class="score-label">${report.mcls_burden}</p>
+                    <p class="score-explanation">${report.mcls_explanation}</p>
+                </div>
+                
+                <div class="score-card">
+                    <h4>DIRS (Drug Interaction Risk)</h4>
+                    <p class="score-value">${report.dir_score}</p>
+                    <p class="score-label">${report.dir_risk}</p>
+                </div>
+                
+                <div class="score-card">
+                    <h4>Anticholinergic Burden</h4>
+                    <p class="score-value">${report.anticholinergic_score}</p>
+                    <p class="score-label">${
+                        report.anticholinergic_score >= 3 ? 'HIGH - Urgent review needed' :
+                        report.anticholinergic_score >= 2 ? 'MODERATE - Monitor closely' :
+                        report.anticholinergic_score >= 1 ? 'LOW - Minimal concern' :
+                        'NONE'
+                    }</p>
+                </div>
+            </div>
+        </div>
+    `;
     
     // Next Steps
     html += `
