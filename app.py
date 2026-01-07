@@ -78,125 +78,169 @@ def check_medication_realtime():
             })
         
         # Import necessary functions
-        from interaction_database import check_interaction, normalize_drug_name
+        from interaction_database import (
+            check_interaction, 
+            normalize_drug_name,
+            get_drug_profile,
+            DRUG_PROFILES
+        )
         from elderly_med_burden import BEERS_CRITERIA, FALL_RISK_DRUGS
         
         warnings = []
         normalized_name = normalize_drug_name(new_med_name)
         
-        # ========== CHECK 1: Beers Criteria ==========
-        if normalized_name in BEERS_CRITERIA:
-            beers_info = BEERS_CRITERIA[normalized_name]
+        # Check if drug exists in database
+        drug_profile = get_drug_profile(new_med_name)
+        
+        if not drug_profile:
             warnings.append({
-                "type": "beers_criteria",
-                "severity": beers_info["risk"],  # "high" or "moderate"
-                "icon": "⚠️" if beers_info["risk"] == "moderate" else "🚨",
-                "title": f"{new_med_name} - Potentially Inappropriate for Elderly",
-                "message": beers_info["rationale"],
-                "recommendation": beers_info["recommendation"],
-                "category": beers_info["category"]
+                "severity": "low",
+                "icon": "❔",
+                "title": "Unknown Medication",
+                "message": f'"{new_med_name}" is not in our database. This doesn\'t mean it\'s unsafe.',
+                "recommendation": "Verify spelling or try the generic name.",
+                "category": "Database Coverage"
+            })
+            return jsonify({
+                "success": True,
+                "warnings": warnings,
+                "safe": False
             })
         
-        # ========== CHECK 2: Drug Interactions ==========
+        # ========== CHECK 1: Drug Interactions (MOST IMPORTANT) ==========
         for existing_med in existing_meds:
             existing_name = existing_med.get('name', '')
             if not existing_name:
                 continue
                 
             interaction = check_interaction(new_med_name, existing_name)
+            
             if interaction:
                 severity = interaction.get('severity', 'moderate')
-                if severity in ['high', 'moderate']:  # Only show significant interactions
-                    warnings.append({
-                        "type": "interaction",
-                        "severity": severity,
-                        "icon": "🚨" if severity == "high" else "⚠️",
-                        "title": f"Drug Interaction: {new_med_name} + {existing_name}",
-                        "message": interaction.get('description', 'Interaction detected'),
-                        "interacting_drug": existing_name,
-                        "recommendation": "Consult healthcare provider before combining these medications"
-                    })
-        
-        # ========== CHECK 3: Fall Risk Accumulation ==========
-        if normalized_name in FALL_RISK_DRUGS:
-            # Count how many existing meds also increase fall risk
-            fall_risk_count = sum(
-                1 for med in existing_meds 
-                if normalize_drug_name(med.get('name', '')) in FALL_RISK_DRUGS
-            )
-            
-            if fall_risk_count >= 1:  # Already have fall-risk meds
-                total_fall_risk_meds = fall_risk_count + 1
+                
+                # Icon mapping
+                icon_map = {
+                    'critical': '🚨',
+                    'high': '⚠️',
+                    'moderate': '⚡',
+                    'low': 'ℹ️'
+                }
+                
                 warnings.append({
-                    "type": "fall_risk",
-                    "severity": "high" if total_fall_risk_meds >= 3 else "moderate",
-                    "icon": "⚠️",
-                    "title": f"Fall Risk Medication #{total_fall_risk_meds}",
-                    "message": f"This is the {ordinal(total_fall_risk_meds)} medication that increases fall risk. Multiple fall-risk medications compound the danger.",
-                    "recommendation": "Consider fall prevention strategies and discuss alternatives with physician",
-                    "total_fall_risk_meds": total_fall_risk_meds
-                })
-            else:  # First fall-risk med
-                warnings.append({
-                    "type": "fall_risk",
-                    "severity": "low",
-                    "icon": "ℹ️",
-                    "title": "Fall Risk Medication",
-                    "message": f"{new_med_name} may increase fall risk in elderly patients.",
-                    "recommendation": "Monitor for dizziness, drowsiness, or balance issues"
+                    "severity": severity,
+                    "icon": icon_map.get(severity, '⚠️'),
+                    "title": f"Interaction: {new_med_name} + {existing_name}",
+                    "message": interaction.get('description', 'Drug interaction detected'),
+                    "recommendation": interaction.get('action', 'Consult physician before combining'),
+                    "category": "Drug-Drug Interaction"
                 })
         
-        # ========== CHECK 4: Anticholinergic Burden ==========
-        from elderly_med_burden import ANTICHOLINERGIC_BURDEN
-        
-        if normalized_name in ANTICHOLINERGIC_BURDEN:
-            anticholinergic_score = ANTICHOLINERGIC_BURDEN[normalized_name]
-            
-            # Calculate existing anticholinergic burden
-            existing_burden = sum(
-                ANTICHOLINERGIC_BURDEN.get(normalize_drug_name(med.get('name', '')), 0)
-                for med in existing_meds
-            )
-            
-            new_total = existing_burden + anticholinergic_score
-            
-            if new_total >= 3:  # High burden threshold
-                warnings.append({
-                    "type": "anticholinergic",
-                    "severity": "high",
-                    "icon": "🧠",
-                    "title": "High Anticholinergic Burden",
-                    "message": f"Adding {new_med_name} increases total anticholinergic burden to {new_total}. High burden associated with cognitive impairment, confusion, and increased fall risk.",
-                    "recommendation": "Consider alternatives with lower anticholinergic effects",
-                    "anticholinergic_score": anticholinergic_score,
-                    "new_total": new_total
-                })
-        
-        # ========== CHECK 5: High Pill Burden ==========
-        total_existing_pills = sum(med.get('doses_per_day', 1) for med in existing_meds)
-        if total_existing_pills >= 10:  # Already high burden
+        # ========== CHECK 2: Beers Criteria ==========
+        if drug_profile.beers_criteria and patient_age >= 65:
             warnings.append({
-                "type": "pill_burden",
-                "severity": "moderate",
-                "icon": "💊",
-                "title": "High Pill Burden",
-                "message": f"Patient already takes {total_existing_pills} pills per day. Adding more medications increases complexity and reduces adherence.",
-                "recommendation": "Consider if this medication is essential or if existing medications could be simplified"
+                "severity": "high",
+                "icon": "🚫",
+                "title": "Beers Criteria - Potentially Inappropriate",
+                "message": f"{drug_profile.generic_name.title()} is flagged as potentially inappropriate for elderly patients.",
+                "recommendation": "Discuss alternatives with prescriber. These medications often have safer options.",
+                "category": "Beers Criteria"
             })
         
-        # Sort warnings by severity (high first, then moderate, then low)
-        severity_order = {"high": 0, "moderate": 1, "low": 2}
-        warnings.sort(key=lambda w: severity_order.get(w.get("severity", "low"), 2))
+        # ========== CHECK 3: Fall Risk ==========
+        if drug_profile.fall_risk_score >= 7:
+            warnings.append({
+                "severity": "high",
+                "icon": "🏥",
+                "title": "High Fall Risk",
+                "message": f"{drug_profile.generic_name.title()} has very high fall risk (score: {drug_profile.fall_risk_score}/10).",
+                "recommendation": "Implement fall prevention: remove hazards, use grab bars, consider alternatives.",
+                "category": "Fall Risk"
+            })
+        elif drug_profile.fall_risk_score >= 5:
+            warnings.append({
+                "severity": "moderate",
+                "icon": "⚠️",
+                "title": "Elevated Fall Risk",
+                "message": f"{drug_profile.generic_name.title()} increases fall risk (score: {drug_profile.fall_risk_score}/10).",
+                "recommendation": "Use caution with ambulation, especially at night.",
+                "category": "Fall Risk"
+            })
+        
+        # ========== CHECK 4: Anticholinergic Burden ==========
+        if drug_profile.anticholinergic_score >= 3:
+            warnings.append({
+                "severity": "high",
+                "icon": "🧠",
+                "title": "Severe Anticholinergic Effects",
+                "message": f"{drug_profile.generic_name.title()} has severe anticholinergic effects (3/3). Increases confusion and delirium risk.",
+                "recommendation": "Consider non-anticholinergic alternatives. Monitor for confusion, dry mouth, urinary retention.",
+                "category": "Anticholinergic"
+            })
+        elif drug_profile.anticholinergic_score >= 2:
+            warnings.append({
+                "severity": "moderate",
+                "icon": "🧠",
+                "title": "Moderate Anticholinergic Burden",
+                "message": f"{drug_profile.generic_name.title()} has moderate anticholinergic effects ({drug_profile.anticholinergic_score}/3).",
+                "recommendation": "Monitor for dry mouth, constipation, confusion.",
+                "category": "Anticholinergic"
+            })
+        
+        # ========== CHECK 5: Sedative Effects ==========
+        if drug_profile.sedative_score >= 3:
+            warnings.append({
+                "severity": "high",
+                "icon": "😴",
+                "title": "High Sedation Risk",
+                "message": f"{drug_profile.generic_name.title()} causes significant sedation (3/3). Increases fall risk.",
+                "recommendation": "Take at bedtime only. Avoid nighttime ambulation. Use bedside commode.",
+                "category": "Sedation"
+            })
+        elif drug_profile.sedative_score >= 2:
+            warnings.append({
+                "severity": "moderate",
+                "icon": "😴",
+                "title": "Moderate Sedation",
+                "message": f"{drug_profile.generic_name.title()} may cause drowsiness ({drug_profile.sedative_score}/3).",
+                "recommendation": "Be cautious with driving and activities requiring alertness.",
+                "category": "Sedation"
+            })
+        
+        # ========== CHECK 6: Renal Adjustment ==========
+        if drug_profile.renal_adjustment:
+            warnings.append({
+                "severity": "moderate",
+                "icon": "🩺",
+                "title": "Renal Dose Adjustment Required",
+                "message": f"{drug_profile.generic_name.title()} requires dose adjustment in kidney impairment.",
+                "recommendation": "Ensure kidney function checked. Dose may need reduction.",
+                "category": "Renal"
+            })
+        
+        # Sort by severity (critical/high first)
+        severity_order = {"critical": 0, "high": 1, "moderate": 2, "low": 3}
+        warnings.sort(key=lambda w: severity_order.get(w.get("severity", "low"), 3))
+        
+        # Determine if safe (no high/critical warnings)
+        has_critical = any(w['severity'] in ['critical', 'high'] for w in warnings)
+        is_safe = len(warnings) == 0 or not has_critical
         
         return jsonify({
             "success": True,
             "warnings": warnings,
-            "safe": len([w for w in warnings if w['severity'] in ['high', 'moderate']]) == 0,
-            "warning_count": len(warnings),
-            "high_severity_count": len([w for w in warnings if w['severity'] == 'high'])
+            "safe": is_safe,
+            "drug_info": {
+                "generic_name": drug_profile.generic_name,
+                "drug_class": drug_profile.drug_class,
+                "brand_names": drug_profile.brand_names
+            }
         })
         
     except Exception as e:
+        print(f"❌ Error in check_medication: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
         return jsonify({
             "success": False,
             "error": str(e),
