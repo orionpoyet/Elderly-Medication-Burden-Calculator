@@ -1058,7 +1058,6 @@ footer strong {
    MEDICATION TIMING CUSTOMIZATION
    Add to END of static/css/style.css
    ======================================================================== */
-
 .timing-preferences {
     background: linear-gradient(135deg, #f8f7ff 0%, #fff 100%);
     border: 2px solid #e0f7ff;
@@ -1106,6 +1105,22 @@ footer strong {
     background: white;
     transition: all 0.3s;
     font-family: 'Roboto', sans-serif;
+    cursor: text; /* Shows text cursor instead of pointer */
+    /* Remove the calendar/clock picker styling */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Hides the clock/calendar picker icon in WebKit browsers (Chrome, Safari, Edge) */
+.timing-slot input[type="time"]::-webkit-calendar-picker-indicator {
+    display: none;
+    -webkit-appearance: none;
+}
+
+/* Hides the clock/calendar picker icon in Firefox */
+.timing-slot input[type="time"]::-moz-calendar-picker-indicator {
+    display: none;
 }
 
 .timing-slot input[type="time"]:focus {
@@ -1114,9 +1129,8 @@ footer strong {
     box-shadow: 0 0 0 3px rgba(168, 198, 223, 0.2);
 }
 
-.timing-slot input[type="time"]::-webkit-calendar-picker-indicator {
-    cursor: pointer;
-    filter: invert(0.5) sepia(1) saturate(5) hue-rotate(175deg);
+.timing-slot input[type="time"]::placeholder {
+    color: #aaa;
 }
 
 .timing-icon {
