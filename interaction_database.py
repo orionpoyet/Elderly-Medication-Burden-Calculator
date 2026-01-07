@@ -945,12 +945,14 @@ DRUG_PROFILES: Dict[str, DrugProfile] = {
 }
 #48 + 6 drug profiles
 
-
 # ============================================================================
 # INTERACTION DATABASE - Structured by Severity and Mechanism
 # ============================================================================
-INTERACTION_DATABASE: Dict[frozenset[str], DrugInteraction] = {
-    # ==================== CRITICAL INTERACTIONS (Life-threatening) ====================
+INTERACTION_DATABASE: Dict[frozenset, DrugInteraction] = {
+    # ==================== CRITICAL INTERACTIONS ====================
+    
+    # FIXED: Changed from "bactrim" to match what's in your DRUG_ALIASES
+    # Your DRUG_ALIASES maps "bactrim" → "bactrim", and DRUG_PROFILES has "bactrim" as key
     frozenset({'warfarin', 'bactrim'}): DrugInteraction(
         severity="critical",
         description="Bactrim significantly increases warfarin's anticoagulant effect, causing severe bleeding risk",
@@ -996,8 +998,8 @@ INTERACTION_DATABASE: Dict[frozenset[str], DrugInteraction] = {
         renal_risk=True
     ),
     
-    # ==================== HIGH INTERACTIONS (Require immediate attention) ====================
-    frozenset({'warfarin', 'acetylsalicylic acid'}): DrugInteraction(
+    # ==================== HIGH INTERACTIONS ====================
+    frozenset({'warfarin', 'acetylsalicylic_acid'}): DrugInteraction(
         severity="high",
         description="Synergistic bleeding risk - gastrointestinal and intracranial bleeding",
         mechanism="Dual anticoagulant/antiplatelet effect",
@@ -1027,7 +1029,7 @@ INTERACTION_DATABASE: Dict[frozenset[str], DrugInteraction] = {
         renal_risk=False
     ),
     
-    # ==================== MODERATE INTERACTIONS (Require monitoring) ====================
+    # ==================== MODERATE INTERACTIONS ====================
     frozenset({'lisinopril', 'ibuprofen'}): DrugInteraction(
         severity="moderate",
         description="NSAIDs reduce ACE inhibitor effectiveness and increase renal risk",
@@ -1058,7 +1060,7 @@ INTERACTION_DATABASE: Dict[frozenset[str], DrugInteraction] = {
         renal_risk=False
     ),
     
-    # ==================== ELDERLY-SPECIFIC HIGH RISK COMBINATIONS ====================
+    # ==================== ELDERLY-SPECIFIC HIGH RISK ====================
     frozenset({'zolpidem', 'hydrochlorothiazide'}): DrugInteraction(
         severity="high",
         description="Fall risk combination - sedation plus orthostatic hypotension",
@@ -1089,7 +1091,7 @@ INTERACTION_DATABASE: Dict[frozenset[str], DrugInteraction] = {
         renal_risk=False
     ),
     
-    # ==================== TRIPLE WHAMMY DETECTION ====================
+    # ==================== TRIPLE WHAMMY ====================
     frozenset({'lisinopril', 'furosemide', 'ibuprofen'}): DrugInteraction(
         severity="critical",
         description="TRIPLE WHAMMY: ACE inhibitor + diuretic + NSAID = acute kidney injury",
@@ -1105,6 +1107,7 @@ INTERACTION_DATABASE: Dict[frozenset[str], DrugInteraction] = {
         renal_risk=True
     )
 }
+
 
 # ============================================================================
 # THERAPEUTIC DUPLICATION DATABASE
@@ -2847,3 +2850,106 @@ if _INTEGRITY_CHECK_ENABLED:
 # ============================================================================
 # END OF FILE - FIXED AND COMPLETE VERSION
 # ============================================================================
+# ============================================================================
+# DEBUGGING HELPER FUNCTION
+# ============================================================================
+
+def debug_interaction_lookup(drug1: str, drug2: str) -> None:
+    """
+    Debug helper to see what's happening during interaction lookup.
+    Use this to troubleshoot why interactions aren't showing up.
+    """
+    print(f"\n🔍 DEBUGGING INTERACTION LOOKUP: '{drug1}' + '{drug2}'")
+    print("=" * 70)
+    
+    # Step 1: Normalize names
+    drug1_norm = normalize_drug_name(drug1)
+    drug2_norm = normalize_drug_name(drug2)
+    print(f"1. Normalized names:")
+    print(f"   '{drug1}' → '{drug1_norm}'")
+    print(f"   '{drug2}' → '{drug2_norm}'")
+    
+    # Step 2: Check if drugs exist in profiles
+    profile1 = get_drug_profile(drug1)
+    profile2 = get_drug_profile(drug2)
+    print(f"\n2. Drug profiles found:")
+    print(f"   '{drug1_norm}': {'✓ Found' if profile1 else '✗ NOT FOUND'}")
+    if profile1:
+        print(f"      Generic: {profile1.generic_name}")
+    print(f"   '{drug2_norm}': {'✓ Found' if profile2 else '✗ NOT FOUND'}")
+    if profile2:
+        print(f"      Generic: {profile2.generic_name}")
+    
+    # Step 3: Check what key we're looking for
+    search_key = frozenset({drug1_norm, drug2_norm})
+    print(f"\n3. Search key created:")
+    print(f"   frozenset({{{repr(drug1_norm)}, {repr(drug2_norm)}}})")
+    
+    # Step 4: Check if key exists in database
+    found = search_key in INTERACTION_DATABASE
+    print(f"\n4. Key found in database: {'✓ YES' if found else '✗ NO'}")
+    
+    # Step 5: Show all available keys in database
+    print(f"\n5. Available interaction keys in database:")
+    for key in list(INTERACTION_DATABASE.keys())[:10]:  # Show first 10
+        drugs_in_key = list(key)
+        if len(drugs_in_key) == 2:
+            print(f"   frozenset({{{repr(drugs_in_key[0])}, {repr(drugs_in_key[1])}}})")
+        else:
+            print(f"   frozenset({drugs_in_key})")
+    if len(INTERACTION_DATABASE) > 10:
+        print(f"   ... and {len(INTERACTION_DATABASE) - 10} more")
+    
+    # Step 6: Try the lookup
+    print(f"\n6. Attempting lookup with check_interaction():")
+    interaction = check_interaction(drug1, drug2)
+    if interaction:
+        print(f"   ✓ FOUND: {interaction['severity'].upper()} interaction")
+        print(f"   Description: {interaction['description'][:100]}...")
+    else:
+        print(f"   ✗ NO INTERACTION FOUND")
+        
+        # Suggest fixes
+        print(f"\n💡 SUGGESTED FIXES:")
+        if not profile1:
+            print(f"   1. Add '{drug1_norm}' to DRUG_PROFILES")
+        if not profile2:
+            print(f"   2. Add '{drug2_norm}' to DRUG_PROFILES")
+        if profile1 and profile2 and not found:
+            print(f"   3. Add this interaction to INTERACTION_DATABASE:")
+            print(f"      frozenset({{'{drug1_norm}', '{drug2_norm}'}}): DrugInteraction(...)")
+    
+    print("=" * 70)
+
+
+# ============================================================================
+# USAGE EXAMPLES FOR TESTING
+# ============================================================================
+
+if __name__ == "__main__":
+    # Test the problematic case
+    print("Testing Warfarin + Bactrim interaction...")
+    
+    # Debug the lookup
+    debug_interaction_lookup("Warfarin", "Bactrim")
+    
+    # Try actual lookup
+    interaction = check_interaction("Warfarin", "Bactrim")
+    if interaction:
+        print("\n✅ SUCCESS! Interaction found:")
+        print(f"   Severity: {interaction['severity']}")
+        print(f"   Description: {interaction['description']}")
+    else:
+        print("\n❌ FAILED - No interaction found")
+        print("\nChecking DRUG_ALIASES:")
+        print(f"   'bactrim' maps to: {DRUG_ALIASES.get('bactrim', 'NOT FOUND')}")
+        print(f"   'warfarin' maps to: {DRUG_ALIASES.get('warfarin', 'NOT FOUND')}")
+        
+        print("\nChecking DRUG_PROFILES:")
+        print(f"   'bactrim' in profiles: {'bactrim' in DRUG_PROFILES}")
+        print(f"   'warfarin' in profiles: {'warfarin' in DRUG_PROFILES}")
+        
+        print("\nChecking INTERACTION_DATABASE keys:")
+        for key in INTERACTION_DATABASE.keys():
+            if 'warfarin' in key or 'bactrim' in key:
+                print(f"   Found key: {key}")
