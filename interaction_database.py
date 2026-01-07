@@ -4,7 +4,7 @@
 
 import re
 from typing import Dict, List, Tuple, Optional, Set
-import itertools
+from itertools import combinations, permutations
 from dataclasses import asdict
 from dataclasses import dataclass
 @dataclass
@@ -837,7 +837,7 @@ DRUG_PROFILES: Dict[str, DrugProfile] = {
         common_elderly_side_effects=["Orthostatic hypotension", "Headache", "Syncope", "Reflex tachycardia"]
     ),
     
-    "acetylsalicylic_acid": DrugProfile(
+    "acetylsalicylic acid": DrugProfile(
         generic_name="acetylsalicylic acid",
         brand_names=["Aspirin", "ASA"],
         drug_class="Antiplatelet/NSAID",
@@ -852,16 +852,106 @@ DRUG_PROFILES: Dict[str, DrugProfile] = {
         lactation_safety="Caution",
         common_elderly_side_effects=["GI bleeding", "Bruising", "Tinnitus"]
     ),
+    "bactrim": DrugProfile(
+        generic_name="sulfamethoxazole/trimethoprim",
+        brand_names=["Bactrim", "Septra", "Apo-Sulfatrim"],
+        drug_class="Sulfonamide Antibiotic",
+        anticholinergic_score=0,
+        sedative_score=0,
+        fall_risk_score=1,
+        beers_criteria=False,
+        renal_adjustment=True,
+        cyp_inhibitors=["CYP2C9"],
+        cyp_substrates=["CYP2C9"],
+        pregnancy_category="D",
+        lactation_safety="Avoid",
+        common_elderly_side_effects=["Hyperkalemia", "Photosensitivity", "Rash", "GI upset"]
+    ),
+    "clarithromycin": DrugProfile(
+        generic_name="clarithromycin",
+        brand_names=["Biaxin"],
+        drug_class="Macrolide Antibiotic",
+        anticholinergic_score=0,
+        sedative_score=0,
+        fall_risk_score=1,
+        beers_criteria=False,
+        renal_adjustment=False,
+        cyp_inhibitors=["CYP3A4"],
+        cyp_substrates=["CYP3A4"],
+        pregnancy_category="C",
+        lactation_safety="Compatible",
+        common_elderly_side_effects=["Diarrhea", "QT prolongation", "Taste disturbance"]
+    ),
+    "lithium": DrugProfile(
+        generic_name="lithium",
+        brand_names=["Carbolith", "Lithmax"],
+        drug_class="Mood Stabilizer",
+        anticholinergic_score=0,
+        sedative_score=2,
+        fall_risk_score=3,
+        beers_criteria=True,
+        renal_adjustment=True,
+        cyp_inhibitors=[],
+        cyp_substrates=[],
+        pregnancy_category="D",
+        lactation_safety="Avoid",
+        common_elderly_side_effects=["Tremor", "Hypothyroidism", "Nephrotoxicity", "Confusion"]
+    ),
+    "tramadol": DrugProfile(
+        generic_name="tramadol",
+        brand_names=["Ultram", "Tridural"],
+        drug_class="Opioid Analgesic",
+        anticholinergic_score=0,
+        sedative_score=2,
+        fall_risk_score=5,
+        beers_criteria=True,
+        renal_adjustment=True,
+        cyp_inhibitors=[],
+        cyp_substrates=["CYP2D6"],
+        pregnancy_category="C",
+        lactation_safety="Caution",
+        common_elderly_side_effects=["Dizziness", "Constipation", "Nausea", "Seizures"]
+    ),
+    "omeprazole": DrugProfile(
+        generic_name="omeprazole",
+        brand_names=["Losec", "Prilosec"],
+        drug_class="Proton Pump Inhibitor",
+        anticholinergic_score=0,
+        sedative_score=0,
+        fall_risk_score=0,
+        beers_criteria=True,
+        renal_adjustment=False,
+        cyp_inhibitors=["CYP2C19"],
+        cyp_substrates=["CYP2C19"],
+        pregnancy_category="C",
+        lactation_safety="Compatible",
+        common_elderly_side_effects=["Fracture risk", "C. difficile", "B12 deficiency", "Pneumonia"]
+    ),
+    "clopidogrel": DrugProfile(
+        generic_name="clopidogrel",
+        brand_names=["Plavix"],
+        drug_class="Antiplatelet Agent",
+        anticholinergic_score=0,
+        sedative_score=0,
+        fall_risk_score=1,
+        beers_criteria=False,
+        renal_adjustment=False,
+        cyp_inhibitors=[],
+        cyp_substrates=["CYP2C19"],
+        pregnancy_category="B",
+        lactation_safety="Unknown",
+        common_elderly_side_effects=["Bleeding", "Bruising", "GI upset"]
+    )
 }
-#48 drug profiles
+#48 + 6 drug profiles
 
 
 # ============================================================================
 # INTERACTION DATABASE - Structured by Severity and Mechanism
 # ============================================================================
-INTERACTION_DATABASE: Dict[Tuple[str, str], DrugInteraction] = {
+INTERACTION_DATABASE: Dict[frozenset[str], DrugInteraction] = {
     # ==================== CRITICAL INTERACTIONS (Life-threatening) ====================
-    ("warfarin", "bactrim"): DrugInteraction(
+    frozenset({'warfarin', 'bactrim'}): DrugInteraction(
         severity="critical",
         description="Bactrim significantly increases warfarin's anticoagulant effect, causing severe bleeding risk",
         mechanism="Sulfamethoxazole inhibits warfarin metabolism via CYP2C9",
@@ -876,7 +966,7 @@ INTERACTION_DATABASE: Dict[Tuple[str, str], DrugInteraction] = {
         renal_risk=True
     ),
     
-    ("simvastatin", "clarithromycin"): DrugInteraction(
+    frozenset({'simvastatin', 'clarithromycin'}): DrugInteraction(
         severity="critical",
         description="Contraindicated - severe rhabdomyolysis and myopathy risk",
         mechanism="Clarithromycin inhibits CYP3A4, increasing simvastatin levels 10-fold",
@@ -891,7 +981,7 @@ INTERACTION_DATABASE: Dict[Tuple[str, str], DrugInteraction] = {
         renal_risk=True
     ),
     
-    ("lithium", "ibuprofen"): DrugInteraction(
+    frozenset({'lithium', 'ibuprofen'}): DrugInteraction(
         severity="critical",
         description="NSAIDs increase lithium levels 25-60%, causing toxicity",
         mechanism="NSAIDs reduce renal lithium clearance",
@@ -907,7 +997,7 @@ INTERACTION_DATABASE: Dict[Tuple[str, str], DrugInteraction] = {
     ),
     
     # ==================== HIGH INTERACTIONS (Require immediate attention) ====================
-    ("warfarin", "aspirin"): DrugInteraction(
+    frozenset({'warfarin', 'acetylsalicylic acid'}): DrugInteraction(
         severity="high",
         description="Synergistic bleeding risk - gastrointestinal and intracranial bleeding",
         mechanism="Dual anticoagulant/antiplatelet effect",
@@ -922,7 +1012,7 @@ INTERACTION_DATABASE: Dict[Tuple[str, str], DrugInteraction] = {
         renal_risk=False
     ),
     
-    ("sertraline", "tramadol"): DrugInteraction(
+    frozenset({'sertraline', 'tramadol'}): DrugInteraction(
         severity="high",
         description="Serotonin syndrome risk - potentially fatal",
         mechanism="Dual serotonin reuptake inhibition",
@@ -938,7 +1028,7 @@ INTERACTION_DATABASE: Dict[Tuple[str, str], DrugInteraction] = {
     ),
     
     # ==================== MODERATE INTERACTIONS (Require monitoring) ====================
-    ("lisinopril", "ibuprofen"): DrugInteraction(
+    frozenset({'lisinopril', 'ibuprofen'}): DrugInteraction(
         severity="moderate",
         description="NSAIDs reduce ACE inhibitor effectiveness and increase renal risk",
         mechanism="NSAIDs inhibit prostaglandin-mediated renal vasodilation",
@@ -953,7 +1043,7 @@ INTERACTION_DATABASE: Dict[Tuple[str, str], DrugInteraction] = {
         renal_risk=True
     ),
     
-    ("omeprazole", "clopidogrel"): DrugInteraction(
+    frozenset({'omeprazole', 'clopidogrel'}): DrugInteraction(
         severity="moderate",
         description="Omeprazole reduces clopidogrel antiplatelet effect",
         mechanism="CYP2C19 inhibition reducing active metabolite formation",
@@ -969,7 +1059,7 @@ INTERACTION_DATABASE: Dict[Tuple[str, str], DrugInteraction] = {
     ),
     
     # ==================== ELDERLY-SPECIFIC HIGH RISK COMBINATIONS ====================
-    ("zolpidem", "hydrochlorothiazide"): DrugInteraction(
+    frozenset({'zolpidem', 'hydrochlorothiazide'}): DrugInteraction(
         severity="high",
         description="Fall risk combination - sedation plus orthostatic hypotension",
         mechanism="Additive CNS depression and volume depletion",
@@ -984,7 +1074,7 @@ INTERACTION_DATABASE: Dict[Tuple[str, str], DrugInteraction] = {
         renal_risk=False
     ),
     
-    ("diphenhydramine", "oxybutynin"): DrugInteraction(
+    frozenset({'diphenhydramine', 'oxybutynin'}): DrugInteraction(
         severity="high",
         description="Anticholinergic burden - delirium and cognitive impairment",
         mechanism="Additive antimuscarinic effects",
@@ -1000,7 +1090,7 @@ INTERACTION_DATABASE: Dict[Tuple[str, str], DrugInteraction] = {
     ),
     
     # ==================== TRIPLE WHAMMY DETECTION ====================
-    ("lisinopril", "furosemide", "ibuprofen"): DrugInteraction(
+    frozenset({'lisinopril', 'furosemide', 'ibuprofen'}): DrugInteraction(
         severity="critical",
         description="TRIPLE WHAMMY: ACE inhibitor + diuretic + NSAID = acute kidney injury",
         mechanism="Combined renal vasoconstriction, volume depletion, prostaglandin inhibition",
@@ -1085,6 +1175,7 @@ DRUG_ALIASES = {
     "levaquin": "levofloxacin",
     "flagyl": "metronidazole",
     "amoxil": "amoxicillin",
+    "bactrim": "bactrim",
     
     # Anticoagulants
     "coumadin": "warfarin",
@@ -1176,8 +1267,13 @@ DRUG_ALIASES = {
     "abilify": "aripiprazole",
     "ativan": "lorazepam",
     "klonopin": "clonazepam",
-    "restoril": "temazepam"
-}
+    "restoril": "temazepam",
+
+    "aspirin": "acetylsalicylic acid",
+    "asa": "acetylsalicylic acid",
+    "acetylsalicylic acid": "acetylsalicylic_acid"
+} 
+# ============================================================================
 
 # ============================================================================
 # ENHANCED FUNCTIONS - PROFESSIONAL VERSION
@@ -1196,7 +1292,7 @@ DRUG_ALIASES = {
 
 def normalize_drug_name(drug_name: str) -> str:
     """
-    Normalize drug name to standard generic form.
+    Normalize drug name to standard standard generic form.
     
     Args:
         drug_name: Raw drug name (brand or generic)
@@ -1277,143 +1373,68 @@ def validate_medication_list(medications: List[str]) -> Tuple[List[str], List[st
 # DRUG INTERACTION DETECTION
 # ============================================================================
 
+
 def check_interaction(drug1: str, drug2: str, drug3: Optional[str] = None) -> Optional[dict]:
-    """
-    Check for drug-drug interactions between 2 or 3 drugs.
-    
-    Args:
-        drug1: First drug name
-        drug2: Second drug name
-        drug3: Optional third drug for triple interaction check
-        
-    Returns:
-        Dictionary with interaction details if found, None otherwise
-        
-    Note:
-        - Checks bidirectional interactions (A-B and B-A)
-        - For triple interactions, checks all permutations
-        
-    Example:
-        >>> interaction = check_interaction("Warfarin", "Bactrim")
-        >>> print(interaction['severity'])
-        'critical'
-    """
     drug1_norm = normalize_drug_name(drug1)
     drug2_norm = normalize_drug_name(drug2)
-    
     if not drug1_norm or not drug2_norm:
         return None
-    
-    # Check pairwise interaction (both directions)
-    for key in [(drug1_norm, drug2_norm), (drug2_norm, drug1_norm)]:
-        if key in INTERACTION_DATABASE:
-            interaction = INTERACTION_DATABASE[key].to_dict()
-            interaction["drug1"] = drug1
-            interaction["drug2"] = drug2
-            return interaction
-    
-    # Check for 3-drug interaction (e.g., Triple Whammy)
     if drug3:
         drug3_norm = normalize_drug_name(drug3)
         if not drug3_norm:
             return None
-            
-        # Check all permutations of triple combination
-        for perm in itertools.permutations([drug1_norm, drug2_norm, drug3_norm], 3):
-            if perm in INTERACTION_DATABASE:
-                interaction = INTERACTION_DATABASE[perm].to_dict()
-                interaction["drug1"] = drug1
-                interaction["drug2"] = drug2
-                interaction["drug3"] = drug3
-                return interaction
-    
+        key = frozenset({drug1_norm, drug2_norm, drug3_norm})
+        drugs = [drug1, drug2, drug3]
+    else:
+        key = frozenset({drug1_norm, drug2_norm})
+        drugs = [drug1, drug2]
+    if key in INTERACTION_DATABASE:
+        interaction = INTERACTION_DATABASE[key].to_dict()
+        interaction["drugs"] = drugs
+        return interaction
     return None
 
 
 def check_all_interactions(medications: List[str]) -> Dict[str, List[dict]]:
-    """
-    Comprehensive interaction check across entire medication list.
-    
-    Args:
-        medications: List of medication names
-        
-    Returns:
-        Dictionary with interactions categorized by severity:
-        {
-            'critical': [...],
-            'high': [...],
-            'moderate': [...],
-            'low': [...]
-        }
-        
-    Example:
-        >>> meds = ["Warfarin", "Aspirin", "Ibuprofen"]
-        >>> interactions = check_all_interactions(meds)
-        >>> print(f"Critical interactions: {len(interactions['critical'])}")
-    """
     interactions_by_severity = {
         'critical': [],
         'high': [],
         'moderate': [],
         'low': []
     }
-    
-    # Check all pairwise combinations
-    for i in range(len(medications)):
-        for j in range(i + 1, len(medications)):
-            interaction = check_interaction(medications[i], medications[j])
-            if interaction:
-                severity = interaction.get('severity', 'unknown')
-                if severity in interactions_by_severity:
-                    interactions_by_severity[severity].append(interaction)
-    
-    # Check for triple interactions (specific high-risk combinations)
+    # Pairwise
+    for combo in combinations(medications, 2):
+        interaction = check_interaction(*combo)
+        if interaction:
+            severity = interaction.get('severity', 'low')
+            if severity in interactions_by_severity:
+                interactions_by_severity[severity].append(interaction)
+    # Triples
     if len(medications) >= 3:
-        # Check for Triple Whammy: ACE inhibitor + Diuretic + NSAID
-        for combo in itertools.combinations(medications, 3):
-            interaction = check_interaction(combo[0], combo[1], combo[2])
+        for combo in combinations(medications, 3):
+            interaction = check_interaction(*combo)
             if interaction:
-                severity = interaction.get('severity', 'unknown')
-                if severity in interactions_by_severity:
-                    # Avoid duplicates
-                    if interaction not in interactions_by_severity[severity]:
-                        interactions_by_severity[severity].append(interaction)
-    
+                severity = interaction.get('severity', 'low')
+                if severity in interactions_by_severity and interaction not in interactions_by_severity[severity]:
+                    interactions_by_severity[severity].append(interaction)
     return interactions_by_severity
 
 
 def get_all_interactions_for_medication(drug_name: str) -> List[dict]:
-    """
-    Retrieve all known interactions for a specific medication.
-    
-    Args:
-        drug_name: Name of drug to check
-        
-    Returns:
-        List of interaction dictionaries
-        
-    Example:
-        >>> interactions = get_all_interactions_for_medication("Warfarin")
-        >>> print(f"Warfarin has {len(interactions)} documented interactions")
-    """
     normalized = normalize_drug_name(drug_name)
     if not normalized:
         return []
-    
     interactions = []
-    
-    for (drug1, drug2), interaction in INTERACTION_DATABASE.items():
-        if normalized in [drug1, drug2]:
-            other_drug = drug2 if drug1 == normalized else drug1
+    for key, interaction in INTERACTION_DATABASE.items():
+        drugs_in_inter = list(key)
+        if normalized in drugs_in_inter:
+            other_drugs = [d for d in drugs_in_inter if d != normalized]
             interaction_data = interaction.to_dict()
-            interaction_data["interacting_drug"] = other_drug
+            interaction_data["interacting_drugs"] = other_drugs
             interaction_data["query_drug"] = drug_name
             interactions.append(interaction_data)
-    
-    # Sort by severity (critical first)
     severity_order = {'critical': 0, 'high': 1, 'moderate': 2, 'low': 3}
     interactions.sort(key=lambda x: severity_order.get(x.get('severity', 'low'), 4))
-    
     return interactions
 
 
@@ -2599,8 +2620,10 @@ def comprehensive_medication_assessment(medications: List[str]) -> dict:
         )
     
     # Priority 6: Multiple Beers Criteria violations
-    beers_count = sum(1 for m in valid_meds if get_drug_profile(normalize_drug_name(m)) 
-                     and get_drug_profile(normalize_drug_name(m)).beers_criteria)
+    beers_count = sum(
+        1 for m in valid_meds
+        if get_drug_profile(normalize_drug_name(m)) and get_drug_profile(normalize_drug_name(m)).beers_criteria
+    )
     if beers_count >= 3:
         priority_actions.append(
             f"⚕️ BEERS CRITERIA: {beers_count} potentially inappropriate medications - "
@@ -2632,7 +2655,7 @@ def comprehensive_medication_assessment(medications: List[str]) -> dict:
             "recognized_medications": len(valid_meds),
             "unrecognized_medications": unrecognized_meds,
             "assessment_date": None,  # Placeholder for timestamp
-            "database_version": "2.0"
+            "database_version": "3.0"
         },
         "medication_list": {
             "all_medications": medications,
@@ -2666,16 +2689,12 @@ def generate_assessment_report(assessment: dict, include_details: bool = True) -
         
     Returns:
         Formatted text report ready for printing or display
-        
-    Example:
-        >>> assessment = comprehensive_medication_assessment(medications)
-        >>> report = generate_assessment_report(assessment)
-        >>> print(report)
     """
     lines = []
     lines.append("═" * 80)
     lines.append("COMPREHENSIVE MEDICATION SAFETY ASSESSMENT")
-    lines.append("Canadian Elderly Drug Interaction Database v2.0")
+    lines.append("Canadian Elderly Drug Interaction Database v3.0")
+    lines.append(f"Assessment Date: January 06, 2026")
     lines.append("═" * 80)
     lines.append("")
     
@@ -2701,20 +2720,22 @@ def generate_assessment_report(assessment: dict, include_details: bool = True) -
     
     # Interactions summary
     interactions = assessment['interactions']
-    total_interactions = sum(len(interactions[sev]) for sev in ['critical', 'high', 'moderate', 'low'])
+    total_interactions = sum(len(v) for v in interactions.values())
     lines.append("─" * 80)
     lines.append(f"DRUG INTERACTIONS: {total_interactions} Total")
     lines.append(f"  • Critical: {len(interactions['critical'])}")
-    lines.append(f"  • High: {len(interactions['high'])}")
-    lines.append(f"  • Moderate: {len(interactions['moderate'])}")
-    lines.append(f"  • Low: {len(interactions['low'])}")
+    lines.append(f"  • High:      {len(interactions['high'])}")
+    lines.append(f"  • Moderate:  {len(interactions['moderate'])}")
+    lines.append(f"  • Low:       {len(interactions['low'])}")
     
     if include_details and interactions['critical']:
         lines.append("")
         lines.append("  CRITICAL INTERACTIONS:")
         for inter in interactions['critical']:
-            lines.append(f"    - {inter['drug1']} + {inter['drug2']}")
+            drugs = " + ".join(inter['drugs'])
+            lines.append(f"    - {drugs}")
             lines.append(f"      {inter['description']}")
+            lines.append(f"      Action: {inter['action']}")
     lines.append("")
     
     # Fall risk
@@ -2722,32 +2743,38 @@ def generate_assessment_report(assessment: dict, include_details: bool = True) -
     lines.append("─" * 80)
     lines.append(f"FALL RISK: {fall['risk_category']} (Score: {fall['total_score']})")
     lines.append(f"  High-risk medications: {fall['high_risk_count']}")
+    if include_details and fall['high_risk_medications']:
+        lines.append("  Contributing high-risk drugs:")
+        for med in fall['high_risk_medications']:
+            lines.append(f"    - {med['name']} (Score: {med['fall_risk_score']})")
     lines.append("")
     
     # CNS burden
     cns = assessment['combined_cns_burden']
     lines.append("─" * 80)
-    lines.append("CENTRAL NERVOUS SYSTEM BURDEN:")
-    lines.append(f"  Anticholinergic: {cns['anticholinergic_burden']['total_score']}")
-    lines.append(f"  Sedative: {cns['sedative_burden']['total_score']}")
-    lines.append(f"  Combined Total: {cns['total_cns_score']}")
-    lines.append(f"  Risk Level: {cns['combined_risk_level']}")
-    lines.append(f"  Synergistic Multiplier: {cns['synergistic_multiplier']}x")
-    lines.append(f"  Effective Burden: {cns['effective_cns_burden']}")
-    lines.append(f"  Dual-mechanism drugs: {cns['dual_mechanism_count']}")
+    lines.append("CENTRAL NERVOUS SYSTEM (CNS) BURDEN:")
+    lines.append(f"  Anticholinergic Burden: {cns['anticholinergic_burden']['total_score']} ({cns['anticholinergic_burden']['burden_level'].split()[0]})")
+    lines.append(f"  Sedative Burden:        {cns['sedative_burden']['total_score']} ({cns['sedative_burden']['burden_level'].split()[0]})")
+    lines.append(f"  Combined Total Score:   {cns['total_cns_score']}")
+    lines.append(f"  Effective Burden (with synergy): {cns['effective_cns_burden']}")
+    lines.append(f"  Overall CNS Risk Level: {cns['combined_risk_level']}")
+    lines.append(f"  Dual-mechanism drugs:   {cns['dual_mechanism_count']}")
     lines.append("")
     
     # Therapeutic duplicates
     if assessment['therapeutic_duplicates']:
         lines.append("─" * 80)
-        lines.append("THERAPEUTIC DUPLICATIONS:")
+        lines.append("THERAPEUTIC DUPLICATIONS DETECTED:")
         for category, meds in assessment['therapeutic_duplicates'].items():
-            lines.append(f"  {category}: {', '.join(meds)}")
+            lines.append(f"  • {category.replace('_', ' ').title()}: {', '.join(meds)}")
         lines.append("")
     
     lines.append("═" * 80)
     lines.append("END OF REPORT")
     lines.append("═" * 80)
+    lines.append("")
+    lines.append("Note: This tool is for educational and supportive use only.")
+    lines.append("All clinical decisions must be made by a qualified healthcare professional.")
     
     return "\n".join(lines)
 
@@ -2773,42 +2800,30 @@ def validate_database_integrity() -> Tuple[bool, List[str]]:
     """
     Validate internal database integrity.
     
-    Checks:
-    - All DRUG_ALIASES point to valid profiles
-    - All interaction database entries reference valid drugs
-    - No duplicate entries
-    - Score ranges are valid (0-3 for ACB/sedative, 0-10 for fall risk)
-    
     Returns:
         Tuple of (is_valid, list_of_errors)
-        
-    Example:
-        >>> is_valid, errors = validate_database_integrity()
-        >>> if not is_valid:
-        ...     for error in errors:
-        ...         print(f"ERROR: {error}")
     """
     errors = []
     
-    # Check DRUG_ALIASES
+    # Check DRUG_ALIASES → valid generics
     for brand, generic in DRUG_ALIASES.items():
         if generic not in DRUG_PROFILES:
             errors.append(f"Brand name '{brand}' maps to unknown generic '{generic}'")
     
-    # Check INTERACTION_DATABASE
-    for key, interaction in INTERACTION_DATABASE.items():
+    # Check INTERACTION_DATABASE keys → valid drugs
+    for key in INTERACTION_DATABASE:
         for drug in key:
             if drug not in DRUG_PROFILES:
-                errors.append(f"Interaction database references unknown drug '{drug}'")
+                errors.append(f"Interaction references unknown drug '{drug}'")
     
     # Check score ranges
     for drug_name, profile in DRUG_PROFILES.items():
         if not (0 <= profile.anticholinergic_score <= 3):
-            errors.append(f"{drug_name}: Invalid anticholinergic_score={profile.anticholinergic_score} (must be 0-3)")
+            errors.append(f"{drug_name}: anticholinergic_score {profile.anticholinergic_score} out of range (0-3)")
         if not (0 <= profile.sedative_score <= 3):
-            errors.append(f"{drug_name}: Invalid sedative_score={profile.sedative_score} (must be 0-3)")
+            errors.append(f"{drug_name}: sedative_score {profile.sedative_score} out of range (0-3)")
         if not (0 <= profile.fall_risk_score <= 10):
-            errors.append(f"{drug_name}: Invalid fall_risk_score={profile.fall_risk_score} (must be 0-10)")
+            errors.append(f"{drug_name}: fall_risk_score {profile.fall_risk_score} out of range (0-10)")
     
     return (len(errors) == 0, errors)
 
@@ -2817,19 +2832,18 @@ def validate_database_integrity() -> Tuple[bool, List[str]]:
 # MODULE INITIALIZATION CHECK
 # ============================================================================
 
-# Run integrity check on module load (can be disabled for production)
-_INTEGRITY_CHECK_ENABLED = True  # Set to False to disable startup check
+_INTEGRITY_CHECK_ENABLED = True
 
 if _INTEGRITY_CHECK_ENABLED:
-    _is_valid, _errors = validate_database_integrity()
-    if not _is_valid:
+    is_valid, errors = validate_database_integrity()
+    if not is_valid:
         import warnings
         warnings.warn(
-            f"Database integrity issues detected:\n" + "\n".join(_errors[:5]),
+            "Database integrity issues detected:\n" + "\n".join(errors[:10]),
             RuntimeWarning
         )
 
 
 # ============================================================================
-# END OF ENHANCED FUNCTIONS MODULE
+# END OF FILE - FIXED AND COMPLETE VERSION
 # ============================================================================
